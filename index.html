@@ -3,68 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Smart Golf Caddy Pro v20</title>
+    <title>Smart Golf Caddy Pro v31</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+    <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         body, html { height: 100%; margin: 0; overflow: hidden; font-family: -apple-system, "Malgun Gothic", sans-serif; background: #000; }
-        
-        /* Map Container and High DPI Optimization */
-        #map-container { width: 100%; height: 100%; overflow: hidden; position: relative; }
-        #map-wrapper { width: 100%; height: 100%; transition: transform 0.6s cubic-bezier(0.2, 0, 0.2, 1); }
-        #map { width: 100%; height: 100%; }
+        #map { position: absolute; top: 0; bottom: 0; width: 100%; }
 
-        /* Modern Glassmorphism UI */
         .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.3); }
         .glass-dark { background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.15); }
         
-        /* Marker Styles */
-        .mkr-base { border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-        .mkr-inner { transition: transform 0.6s; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 42px; height: 42px; }
+        .mkr-container { cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .color-tee { color: #3b82f6; }
         .color-mid { color: #f59e0b; }
         .color-pin { color: #ef4444; }
-        .mkr-label { font-size: 11px; font-weight: 900; background: white; color: black; padding: 0px 5px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.2); margin-top: -6px; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+        .mkr-label { font-size: 11px; font-weight: 900; background: white; color: black; padding: 1px 6px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.2); margin-top: -4px; box-shadow: 0 2px 4px rgba(0,0,0,0.3); white-space: nowrap; }
 
-        /* User Dot */
-        .user-dot-container { display: flex; align-items: center; justify-content: center; }
         .user-dot { 
-            width: 16px; height: 16px; 
-            border: 2px solid white; border-radius: 50%; 
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-            transition: background-color 0.3s, box-shadow 0.3s;
+            width: 22px; height: 22px; 
+            border: 3px solid white; border-radius: 50%; 
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+            transition: background-color 0.3s;
         }
-        .gps-good { background-color: #007AFF; box-shadow: 0 0 15px rgba(0, 122, 255, 0.7); }
-        .gps-weak { background-color: #FFCC00; box-shadow: 0 0 15px rgba(255, 204, 0, 0.7); }
+        .gps-good { background-color: #007AFF; }
+        .gps-weak { background-color: #FFCC00; }
         
-        .dist-label-box { 
-            background: rgba(0,0,0,0.9); color: white; padding: 2px 10px; border-radius: 8px; 
-            font-size: 12px; font-weight: 800; border: 1px solid rgba(255,255,255,0.2); 
-            transition: transform 0.6s; white-space: nowrap;
-        }
-
         .no-select { -webkit-user-select: none; user-select: none; }
         .view-overlay { position: fixed; inset: 0; z-index: 2000; background: rgba(0,0,0,0.75); backdrop-filter: blur(10px); display: none; padding: 20px; align-items: center; justify-content: center; }
         .view-overlay.active { display: flex; }
 
-        /* Bottom Nav Navigation */
         .nav-score-item { display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 0.2s; cursor: pointer; border-radius: 10px; padding: 6px 0; }
         .nav-active-hole { background: rgba(21, 128, 61, 0.4); border: 1px solid rgba(34, 197, 94, 0.6); }
 
-        /* Toast UI */
+        .map-dist-label { background: rgba(0,0,0,0.85); color: white; padding: 2px 8px; border-radius: 6px; font-size: 12px; font-weight: 800; border: 1px solid rgba(255,255,255,0.2); white-space: nowrap; pointer-events: none; }
+
         #toast-container { position: fixed; bottom: 140px; left: 50%; transform: translateX(-50%); z-index: 3000; pointer-events: none; }
-        .toast { background: rgba(0, 0, 0, 0.9); color: white; padding: 12px 24px; border-radius: 16px; font-size: 14px; font-weight: bold; opacity: 0; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform: translateY(20px); text-align: center; border: 1px solid rgba(255,255,255,0.1); }
+        .toast { background: rgba(0, 0, 0, 0.9); color: white; padding: 12px 24px; border-radius: 16px; font-size: 14px; font-weight: bold; opacity: 0; transition: all 0.4s; transform: translateY(20px); text-align: center; border: 1px solid rgba(255,255,255,0.1); }
         .toast.show { opacity: 1; transform: translateY(0); }
 
-        /* Par Symbol Positioning */
         #hole-symbol { font-size: 28px; line-height: 1; height: 20px; display: flex; align-items: center; justify-content: center; margin-bottom: -4px; font-weight: 900; }
     </style>
 </head>
 <body class="no-select">
 
-    <!-- Top Dashboard -->
+    <!-- Top UI -->
     <div class="fixed top-0 left-0 right-0 z-[1000] p-4 flex flex-col gap-2 pointer-events-none">
         <div class="flex justify-start items-start">
             <div class="glass p-3 rounded-[24px] shadow-2xl flex items-center gap-4 border-b-4 border-green-600 pointer-events-auto">
@@ -98,27 +82,23 @@
         </div>
     </div>
 
-    <!-- Map Area -->
-    <div id="map-container">
-        <div id="map-wrapper">
-            <div id="map"></div>
-        </div>
-    </div>
+    <!-- Map Canvas -->
+    <div id="map"></div>
 
-    <!-- Right Controls Group -->
+    <!-- Grouped Right Controls -->
     <div class="fixed right-4 bottom-44 z-[1000] flex flex-col gap-4">
         <button onclick="toggleGameList()" class="glass w-14 h-14 rounded-full flex items-center justify-center text-gray-700 shadow-2xl active:scale-90 border-2 border-white/50"><i data-lucide="home"></i></button>
-        <button id="rotate-btn" onclick="toggleRotation()" class="glass w-14 h-14 rounded-full flex items-center justify-center text-gray-500 shadow-2xl active:scale-90 border-2 border-white/50"><i data-lucide="compass"></i></button>
+        <button id="rotate-btn" onclick="maximizeHoleView()" class="glass w-14 h-14 rounded-full flex items-center justify-center text-gray-500 shadow-2xl active:scale-90 border-2 border-white/50"><i data-lucide="compass"></i></button>
         <button onclick="centerToUser()" class="glass w-14 h-14 rounded-full flex items-center justify-center text-blue-600 shadow-2xl active:scale-90 border-2 border-white/50"><i data-lucide="locate-fixed"></i></button>
         <button onclick="resetHole()" class="glass w-14 h-14 rounded-full flex items-center justify-center text-red-500 shadow-2xl active:scale-90 border-2 border-white/50"><i data-lucide="trash-2"></i></button>
     </div>
 
-    <!-- Floating Mini Board / Navigation -->
+    <!-- Bottom Navigation Dashboard -->
     <div class="fixed bottom-8 left-4 right-4 z-[1000] pointer-events-none flex justify-center">
-        <div class="glass-dark px-4 py-3 rounded-[30px] flex flex-col gap-2 w-full max-w-3xl pointer-events-auto shadow-2xl border border-white/10">
+        <div class="glass-dark px-4 py-3 rounded-[30px] flex flex-col gap-2 w-full max-w-4xl pointer-events-auto shadow-2xl border border-white/10">
             <div class="flex justify-between items-center px-2">
                 <div class="flex items-center gap-3">
-                    <span id="mini-total-strokes" class="text-[11px] font-black text-white/90 tracking-tighter">TOTAL 0</span>
+                    <span id="mini-total-strokes" class="text-[11px] font-black text-white/90 tracking-tighter uppercase">Strokes 0</span>
                     <div class="w-1 h-1 rounded-full bg-white/20"></div>
                     <span id="mini-total-rel" class="text-[11px] font-black text-white/90 uppercase tracking-tighter">EVEN</span>
                 </div>
@@ -128,186 +108,244 @@
         </div>
     </div>
 
-    <!-- Toasts & Overlays -->
     <div id="toast-container"><div id="toast" class="toast"></div></div>
 
     <div id="gamelist-overlay" class="view-overlay">
         <div class="glass w-full max-w-[440px] rounded-[36px] overflow-hidden shadow-2xl flex flex-col p-8 max-h-[85vh]">
             <div class="flex justify-between items-center mb-6">
-                <div><h2 class="text-2xl font-black text-gray-800">Rounding History</h2></div>
-                <button onclick="createNewGame()" class="bg-green-700 text-white px-5 py-2.5 rounded-2xl text-sm font-bold shadow-lg active:scale-95"><i data-lucide="plus" class="inline w-4 h-4 mr-1"></i>새 게임</button>
+                <h2 class="text-2xl font-black text-gray-800">Rounding History</h2>
+                <button onclick="createNewGame()" class="bg-green-700 text-white px-5 py-2.5 rounded-2xl text-sm font-bold shadow-lg active:scale-95">새 게임</button>
             </div>
             <div id="game-items-container" class="flex-1 overflow-y-auto space-y-4 pr-1"></div>
-            <button onclick="toggleGameList(false)" class="mt-6 w-full py-4 bg-gray-100 text-gray-500 rounded-[20px] font-bold active:bg-gray-200">닫기</button>
+            <button onclick="toggleGameList(false)" class="mt-6 w-full py-4 bg-gray-100 text-gray-500 rounded-[20px] font-bold">닫기</button>
         </div>
     </div>
 
     <script>
-        const STORAGE_KEY = 'GOLF_CADDY_GAMES_V20';
+        const STORAGE_KEY = 'GOLF_CADDY_GAMES_V31';
         let games = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-        let currentGameId = null, userPos = [37.5665, 126.9780], currentHole = 1, currentRotation = 0, holeData = [];
-        let map, userMarker, markers = [], lines = [], labels = [], circles = [];
+        let currentGameId = null, userPos = [126.9780, 37.5665], currentHole = 1, holeData = [];
+        let map, userMarker, mapMarkers = [];
+        let isMapLoaded = false;
 
         function init() {
-            lucide.createIcons(); initMap();
-            map.whenReady(() => watchLocation());
-            if (games.length > 0) loadGame(games[0].id); else createNewGame();
-        }
-
-        function showToast(msg) {
-            const toast = document.getElementById('toast');
-            toast.innerText = msg; toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 3000);
+            lucide.createIcons();
+            initMap();
+            watchLocation();
         }
 
         function initMap() {
-            map = L.map('map', { zoomControl: false, attributionControl: false, maxZoom: 19, bounceAtZoomLimits: false }).setView(userPos, 17);
-            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, detectRetina: true }).addTo(map);
-            map.on('click', handleMapClick);
-            map.on('zoomend', () => { if (holeData[currentHole-1]) { holeData[currentHole-1].zoom = map.getZoom(); saveToStorage(); } });
+            try {
+                map = new maplibregl.Map({
+                    container: 'map',
+                    style: {
+                        version: 8,
+                        sources: { 'esri-sat': { type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], tileSize: 256 } },
+                        layers: [{ id: 'esri-sat', type: 'raster', source: 'esri-sat' }]
+                    },
+                    center: userPos,
+                    zoom: 17,
+                    attributionControl: false
+                });
+
+                map.on('load', () => {
+                    isMapLoaded = true;
+                    const el = document.createElement('div');
+                    el.className = 'user-dot gps-good';
+                    userMarker = new maplibregl.Marker({ element: el }).setLngLat(userPos).addTo(map);
+                    
+                    if (games.length > 0) loadGame(games[0].id); else createNewGame();
+                });
+
+                map.on('click', handleMapClick);
+
+                map.on('moveend', () => {
+                    if (!isMapLoaded) return;
+                    const h = holeData[currentHole-1];
+                    if (h) {
+                        h.lastCenter = [map.getCenter().lng, map.getCenter().lat];
+                        h.zoom = map.getZoom();
+                        h.rotation = map.getBearing();
+                        saveToStorage();
+                    }
+                });
+            } catch (e) {
+                showToast("지도를 불러올 수 없습니다.");
+            }
         }
 
         function watchLocation() {
             if (navigator.geolocation) {
                 navigator.geolocation.watchPosition(p => {
                     const lat = p.coords.latitude, lng = p.coords.longitude, acc = p.coords.accuracy;
-                    userPos = [lat, lng];
-                    if (!userMarker) {
-                        userMarker = L.marker(userPos, { 
-                            icon: L.divIcon({ className: 'user-dot-container', html: `<div class="user-dot gps-good"></div>`, iconSize: [24, 24] }),
-                            zIndexOffset: 10000 
-                        }).addTo(map);
-                    } else { userMarker.setLatLng(userPos); }
-                    const dot = document.querySelector('.user-dot');
-                    if (dot) {
-                        if (acc > 25) { dot.classList.replace('gps-good', 'gps-weak'); }
-                        else { dot.classList.replace('gps-weak', 'gps-good'); }
-                        dot.style.transform = `rotate(${-currentRotation}deg)`;
+                    userPos = [lng, lat];
+                    if (userMarker) {
+                        userMarker.setLngLat(userPos);
+                        const el = userMarker.getElement();
+                        if (acc > 35) el.classList.replace('gps-good', 'gps-weak');
+                        else el.classList.replace('gps-weak', 'gps-good');
                     }
                     updateCurrentDist();
-                }, null, { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 });
+                }, null, { enableHighAccuracy: true });
             }
         }
 
+        // --- Core Logic: Tee is Current GPS Location ---
         function handleMapClick(e) {
-            const hole = holeData[currentHole-1];
-            if (!hole.tee) hole.tee = [...userPos];
-            hole.targets.push([e.latlng.lat, e.latlng.lng]);
+            if (!isMapLoaded) return;
+            const h = holeData[currentHole-1];
+            const clickedCoord = [e.lngLat.lng, e.lngLat.lat];
+            
+            // --- NEW RULE: If no Tee, set Current Location as Tee, Clicked as first target ---
+            if (!h.tee) {
+                h.tee = [...userPos]; // Current GPS becomes Tee
+                h.targets.push(clickedCoord); // Click becomes first pin
+                showToast("현재 위치를 티박스로 설정했습니다.");
+            } else {
+                h.targets.push(clickedCoord);
+            }
+            
             sortAndDraw(); saveToStorage();
         }
 
         function sortAndDraw() {
-            const hole = holeData[currentHole-1]; if (!hole || !hole.tee || hole.targets.length === 0) return;
-            let sorted = hole.targets.map(t => ({ ll: t, d: getDist(hole.tee, t) }));
-            sorted.sort((a, b) => a.d - b.d); hole.targets = sorted.map(t => t.ll);
-            renderHole(); if (hole.isRotationOn) applyAutoRotation(); 
+            if (!isMapLoaded) return;
+            const h = holeData[currentHole-1]; if (!h || !h.tee) return;
+            if (h.targets.length > 0) {
+                let sorted = h.targets.map(t => ({ ll: t, d: getDist(h.tee, t) }));
+                sorted.sort((a, b) => a.d - b.d);
+                h.targets = sorted.map(t => t.ll);
+            }
+            renderHoleLayers();
         }
 
-        function renderHole() {
-            markers.forEach(m => map.removeLayer(m)); lines.forEach(l => map.removeLayer(l));
-            labels.forEach(lb => map.removeLayer(lb)); circles.forEach(c => map.removeLayer(c));
-            markers = []; lines = []; labels = []; circles = [];
-            const hole = holeData[currentHole-1]; if (!hole || !hole.tee) return;
-            const path = [hole.tee, ...hole.targets];
+        function renderHoleLayers() {
+            if (!isMapLoaded) return;
+            mapMarkers.forEach(m => m.remove()); mapMarkers = [];
+            if (map.getLayer('course-line')) map.removeLayer('course-line');
+            if (map.getSource('course-line')) map.removeSource('course-line');
 
-            if (hole.targets.length > 0) {
-                const finalPin = hole.targets[hole.targets.length - 1];
-                const configs = [{ r: 50, color: '#ef4444' }, { r: 100, color: '#ffffff' }, { r: 150, color: '#3b82f6' }, { r: 200, color: '#000000' }];
-                configs.forEach(conf => { circles.push(L.circle(finalPin, { radius: conf.r, color: conf.color, weight: 1.5, dashArray: '5, 10', fill: false, interactive: false }).addTo(map)); });
+            const h = holeData[currentHole-1]; if (!h || !h.tee) return;
+            const fullPath = [h.tee, ...h.targets];
+
+            if (fullPath.length > 1) {
+                map.addSource('course-line', { type: 'geojson', data: { type: 'Feature', geometry: { type: 'LineString', coordinates: fullPath } } });
+                map.addLayer({ id: 'course-line', type: 'line', source: 'course-line', paint: { 'line-color': '#ffffff', 'line-width': 3, 'line-dasharray': [2, 1.5] } });
             }
-            path.forEach((ll, i) => {
-                let colorClass = 'color-mid', labelTxt = i;
-                if (i === 0) { colorClass = 'color-tee'; labelTxt = 'Tee'; }
-                else if (i === path.length - 1) { colorClass = 'color-pin'; labelTxt = i; }
-                const m = L.marker(ll, { 
-                    icon: L.divIcon({ className: `mkr-base`, html: `<div class="mkr-inner" style="transform: rotate(${-currentRotation}deg)"><div class="${colorClass}"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="currentColor" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-flag"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></svg></div><div class="mkr-label">${labelTxt}</div></div>`, iconSize: [44, 44], iconAnchor: [8, 40] }), draggable: true, zIndexOffset: 1000
-                }).addTo(map);
-                m.on('dragend', (ev) => {
-                    const nPos = [ev.target.getLatLng().lat, ev.target.getLatLng().lng];
-                    if (i === 0) hole.tee = nPos; else hole.targets[i-1] = nPos;
+
+            fullPath.forEach((coord, i) => {
+                const el = document.createElement('div');
+                el.className = 'mkr-container';
+                let typeColor = 'color-mid', labelTxt = i;
+                if (i === 0) { typeColor = 'color-tee'; labelTxt = 'Tee'; }
+                else if (i === fullPath.length - 1) { typeColor = 'color-pin'; labelTxt = i; }
+
+                el.innerHTML = `
+                    <div class="${typeColor}">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="currentColor" stroke="white" stroke-width="1.8"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></svg>
+                    </div>
+                    <div class="mkr-label">${labelTxt}</div>
+                `;
+
+                const m = new maplibregl.Marker({ element: el, draggable: true, rotationAlignment: 'viewport' })
+                    .setLngLat(coord).addTo(map);
+
+                m.on('dragend', () => {
+                    const n = m.getLngLat();
+                    if (i === 0) h.tee = [n.lng, n.lat];
+                    else h.targets[i-1] = [n.lng, n.lat];
                     sortAndDraw(); saveToStorage();
                 });
-                m.on('click', (ev) => {
-                    L.DomEvent.stopPropagation(ev);
-                    if (hole.targets.length <= 1) resetHole(); else { if (i > 0) { hole.targets.splice(i-1, 1); sortAndDraw(); } else resetHole(); }
+
+                el.addEventListener('click', (ev) => {
+                    ev.stopPropagation();
+                    if (fullPath.length <= 1) resetHole();
+                    else { if (i > 0) h.targets.splice(i-1, 1); else h.tee = null; sortAndDraw(); }
                     saveToStorage();
                 });
-                markers.push(m);
+                mapMarkers.push(m);
+
                 if (i > 0) {
-                    const prev = path[i-1];
-                    lines.push(L.polyline([prev, ll], { color: 'white', weight: 3, dashArray: '8, 12', opacity: 0.8 }).addTo(map));
-                    const mid = [(prev[0]+ll[0])/2, (prev[1]+ll[1])/2];
-                    labels.push(L.marker(mid, { icon: L.divIcon({ className: 'dist-label-container', html: `<div class="dist-label-box" style="transform: rotate(${-currentRotation}deg)">${getDist(prev, ll)}m</div>`, iconSize: [46, 22], iconAnchor: [23, 11] }), zIndexOffset: 2000 }).addTo(map));
+                    const mid = [(fullPath[i-1][0]+fullPath[i][0])/2, (fullPath[i-1][1]+fullPath[i][1])/2];
+                    const distEl = document.createElement('div');
+                    distEl.className = 'map-dist-label';
+                    distEl.innerText = `${getDist(fullPath[i-1], fullPath[i])}m`;
+                    const distMkr = new maplibregl.Marker({ element: distEl, rotationAlignment: 'viewport' }).setLngLat(mid).addTo(map);
+                    mapMarkers.push(distMkr);
                 }
             });
-            updateMarkerRotations(); updateCurrentDist();
+            updateCurrentDist();
         }
 
-        // --- Core Rules & Logic ---
+        function maximizeHoleView() {
+            if (!isMapLoaded) return;
+            const h = holeData[currentHole-1];
+            if (!h || !h.tee || h.targets.length === 0) {
+                showToast("핀을 먼저 찍어주세요.");
+                return;
+            }
+
+            if (h.isRotationOn) {
+                h.isRotationOn = false; h.rotation = 0;
+                map.easeTo({ bearing: 0, center: h.lastCenter || h.tee, duration: 800 });
+            } else {
+                const tee = h.tee, green = h.targets[h.targets.length-1];
+                const dy = green[1] - tee[1], dx = green[0] - tee[0];
+                const targetBearing = (Math.atan2(dx, dy) * 180 / Math.PI);
+
+                const bounds = new maplibregl.LngLatBounds();
+                [tee, ...h.targets].forEach(c => bounds.extend(c));
+
+                map.fitBounds(bounds, { padding: 100, bearing: targetBearing, duration: 1000 });
+                h.isRotationOn = true; h.rotation = targetBearing;
+            }
+            updateRotationUI(); saveToStorage();
+        }
+
+        function updateRotationUI() {
+            const btn = document.getElementById('rotate-btn');
+            const h = holeData[currentHole-1];
+            if (h && h.isRotationOn) btn.classList.add('text-green-600', 'bg-green-50');
+            else btn.classList.remove('text-green-600', 'bg-green-50');
+        }
+
+        function applyHoleState() {
+            if (!isMapLoaded) return;
+            const h = holeData[currentHole-1];
+            updateUI(); 
+            renderHoleLayers();
+            updateRotationUI();
+            const targetCenter = h.lastCenter || h.tee || userPos;
+            const targetZoom = h.zoom || 17;
+            const targetBearing = h.rotation || 0;
+            map.jumpTo({ center: targetCenter, zoom: targetZoom, bearing: targetBearing });
+        }
+
+        function jumpToHole(num) { 
+            currentHole = num; 
+            applyHoleState(); 
+        }
+
         function cyclePar() { 
             const idx = currentHole - 1, h = holeData[idx]; h.par = h.par === 5 ? 3 : h.par + 1; 
-            const startIdx = currentHole <= 9 ? 0 : 9, endIdx = currentHole <= 9 ? 8 : 17;
-            let sum = 0; for(let i = startIdx; i <= endIdx; i++) { sum += holeData[i].par; }
+            const start = currentHole <= 9 ? 0 : 9, end = currentHole <= 9 ? 8 : 17;
+            let sum = 0; for(let i=start; i<=end; i++) sum += holeData[i].par;
             if (sum !== 36) showToast(`${currentHole <= 9 ? '전반' : '후반'} 9홀 합계: ${sum} (목표: 36)`);
             updateUI(); saveToStorage(); 
         }
 
-        function applyAutoRotation() {
-            const hole = holeData[currentHole-1]; if (!hole || !hole.tee || hole.targets.length === 0) return;
-            const tee = hole.tee, green = hole.targets[hole.targets.length - 1];
-            const angle = Math.atan2(green[1] - tee[1], green[0] - tee[0]) * 180 / Math.PI;
-            currentRotation = -(angle - 45); 
-            document.getElementById('map-wrapper').style.transform = `rotate(${currentRotation}deg) scale(1.25)`; 
-            updateMarkerRotations();
-            map.flyToBounds(L.latLngBounds([tee, ...hole.targets]), { padding: [120, 120], duration: 1 });
-        }
-
-        function updateMarkerRotations() {
-            document.querySelectorAll('.mkr-inner').forEach(el => el.style.transform = `rotate(${-currentRotation}deg)`);
-            document.querySelectorAll('.dist-label-box').forEach(el => el.style.transform = `rotate(${-currentRotation}deg)`);
-            const dot = document.querySelector('.user-dot'); if (dot) dot.style.transform = `rotate(${-currentRotation}deg)`;
-        }
-
-        function toggleRotation() {
-            const hole = holeData[currentHole-1]; hole.isRotationOn = !hole.isRotationOn;
-            const btn = document.getElementById('rotate-btn'), wrapper = document.getElementById('map-wrapper');
-            if (hole.isRotationOn) { btn.classList.add('text-green-600', 'bg-green-50'); applyAutoRotation(); }
-            else { btn.classList.remove('text-green-600', 'bg-green-50'); currentRotation = 0; wrapper.style.transform = 'none'; updateMarkerRotations(); map.setView(userPos, hole.zoom || 17); }
-            saveToStorage();
-        }
-
-        function loadGame(id) {
-            const game = games.find(g => g.id === id); if (!game) return;
-            currentGameId = id; holeData = JSON.parse(JSON.stringify(game.holeData)); currentHole = 1; applyHoleState();
-        }
-
-        function createNewGame() {
-            const newGame = { id: Date.now(), date: new Date().toISOString().split('T')[0], holeData: Array.from({ length: 18 }, (_, i) => ({ num: i + 1, par: 4, score: 0, tee: null, targets: [], isRotationOn: false, zoom: 17 })) };
-            games.unshift(newGame); saveToStorage(); loadGame(newGame.id); toggleGameList(false);
-        }
-
-        function applyHoleState() {
-            const hole = holeData[currentHole-1]; updateUI(); renderHole();
-            const btn = document.getElementById('rotate-btn'), wrapper = document.getElementById('map-wrapper');
-            if (hole.isRotationOn && hole.targets.length > 0) { btn.classList.add('text-green-600', 'bg-green-50'); applyAutoRotation(); }
-            else { btn.classList.remove('text-green-600', 'bg-green-50'); currentRotation = 0; wrapper.style.transform = 'none'; updateMarkerRotations(); map.setView(userPos, hole.zoom || 17); }
-        }
-
         function updateUI() {
-            const hole = holeData[currentHole-1]; if (!hole) return;
-            document.getElementById('hole-num').innerText = hole.num;
-            document.getElementById('par-val').innerText = hole.par;
+            const h = holeData[currentHole-1]; if (!h) return;
+            document.getElementById('hole-num').innerText = h.num;
+            document.getElementById('par-val').innerText = h.par;
             const hs = document.getElementById('hole-symbol'), hb = document.getElementById('hole-box');
-            
-            // --- NEW RULE: Par 5+ is "—" (Em Dash) ---
-            if (hole.par >= 5) { hs.innerText = "—"; hb.style.backgroundColor = "#b91c1c"; }
-            else if (hole.par === 3) { hs.innerText = "·"; hb.style.backgroundColor = "#1d4ed8"; }
+            if (h.par >= 5) { hs.innerText = "—"; hb.style.backgroundColor = "#b91c1c"; }
+            else if (h.par === 3) { hs.innerText = "·"; hb.style.backgroundColor = "#1d4ed8"; }
             else { hs.innerText = ""; hb.style.backgroundColor = "#15803d"; }
-            
-            const rel = hole.score === 0 ? "E" : (hole.score > 0 ? `+${hole.score}` : hole.score);
+            const rel = h.score === 0 ? "E" : (h.score > 0 ? `+${h.score}` : h.score);
             document.getElementById('score-display').innerText = rel;
             const tag = document.getElementById('score-rel-tag'); tag.innerText = rel === "E" ? "Even" : rel;
-            tag.className = `px-2 py-0.5 rounded-lg text-[11px] font-black uppercase ${hole.score > 0 ? 'bg-red-100 text-red-600' : (hole.score < 0 ? 'bg-blue-100 text-blue-600' : 'bg-green-50 text-green-700')}`;
+            tag.className = `px-2 py-0.5 rounded-lg text-[11px] font-black uppercase ${h.score > 0 ? 'bg-red-100 text-red-600' : (h.score < 0 ? 'bg-blue-100 text-blue-600' : 'bg-green-50 text-green-700')}`;
             updateCurrentDist(); updateNavigationGrid();
         }
 
@@ -317,33 +355,33 @@
             holeData.forEach((h, idx) => {
                 const rel = h.score === 0 ? "-" : (h.score > 0 ? `+${h.score}` : h.score);
                 const relColor = h.score > 0 ? "text-red-400" : (h.score < 0 ? "text-blue-400" : "text-white/30");
-                
-                // --- NEW RULE: Symbol "—" in grid ---
                 const sy = h.par >= 5 ? "—" : (h.par === 3 ? "·" : "");
-                
-                container.innerHTML += `<div onclick="currentHole=${h.num};applyHoleState();" class="nav-score-item flex-1 ${idx+1===currentHole?'nav-active-hole':''}"><span class="text-[10px] text-white/50 h-2 flex items-center mb-0.5 font-black">${sy}</span><span class="text-[8px] text-white/30 h-1 font-bold">${h.num}</span><span class="text-[12px] font-black ${relColor} mt-1.5">${rel}</span></div>`;
+                container.innerHTML += `<div onclick="jumpToHole(${h.num})" class="nav-score-item flex-1 ${idx+1===currentHole?'nav-active-hole':''}"><span class="text-[10px] text-white/50 h-2 flex items-center mb-0.5 font-black">${sy}</span><span class="text-[8px] text-white/30 h-1 font-bold">${h.num}</span><span class="text-[12px] font-black ${relColor} mt-1.5">${rel}</span></div>`;
                 ts += (h.par + h.score); tr += h.score;
             });
             document.getElementById('mini-total-strokes').innerText = `STROKES ${ts}`;
-            const rTxt = tr === 0 ? "EVEN" : (tr > 0 ? `+${tr}` : tr);
-            const rEl = document.getElementById('mini-total-rel'); rEl.innerText = rTxt;
+            const rEl = document.getElementById('mini-total-rel'); rEl.innerText = tr === 0 ? "EVEN" : (tr > 0 ? `+${tr}` : tr);
             rEl.className = `text-[11px] font-black ${tr > 0 ? 'text-red-400' : (tr < 0 ? 'text-blue-400' : 'text-white/90')}`;
         }
 
         function saveToStorage() { const current = games.find(g => g.id === currentGameId); if (current) current.holeData = holeData; localStorage.setItem(STORAGE_KEY, JSON.stringify(games)); }
-        function getDist(p1, p2) { const R = 6371e3; const dLat = (p2[0]-p1[0]) * Math.PI/180, dLon = (p2[1]-p1[1]) * Math.PI/180; const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(p1[0]*Math.PI/180) * Math.cos(p2[0]*Math.PI/180) * Math.sin(dLon/2) * Math.sin(dLon/2); return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))); }
-        function updateCurrentDist() { const hole = holeData[currentHole-1]; const el = document.getElementById('dist-to-green'); if (hole && hole.targets.length > 0) el.innerText = getDist(userPos, hole.targets[hole.targets.length-1]); else el.innerText = "--"; }
-        function resetHole() { const h = holeData[currentHole-1]; h.tee = null; h.targets = []; renderHole(); updateUI(); saveToStorage(); }
-        function centerToUser() { map.flyTo(userPos, holeData[currentHole-1].zoom || 18); }
+        function loadGame(id) { const game = games.find(g => g.id === id); if (!game) return; currentGameId = id; holeData = JSON.parse(JSON.stringify(game.holeData)); currentHole = 1; if (isMapLoaded) applyHoleState(); }
+        function createNewGame() { const newGame = { id: Date.now(), date: new Date().toISOString().split('T')[0], holeData: Array.from({ length: 18 }, (_, i) => ({ num: i + 1, par: 4, score: 0, tee: null, targets: [], isRotationOn: false, rotation: 0, zoom: 17, lastCenter: null })) }; games.unshift(newGame); saveToStorage(); loadGame(newGame.id); toggleGameList(false); }
+        function getDist(p1, p2) { const R = 6371e3; const dLat = (p2[1]-p1[1])*Math.PI/180, dLon = (p2[0]-p1[0])*Math.PI/180; const a = Math.sin(dLat/2)**2 + Math.cos(p1[1]*Math.PI/180)*Math.cos(p2[1]*Math.PI/180)*Math.sin(dLon/2)**2; return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))); }
+        function updateCurrentDist() { const h = holeData[currentHole-1], el = document.getElementById('dist-to-green'); if (h && h.targets.length > 0) el.innerText = getDist(userPos, h.targets[h.targets.length-1]); else el.innerText = "--"; }
+        function showToast(msg) { const t = document.getElementById('toast'); t.innerText = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3000); }
+        function resetHole() { const h = holeData[currentHole-1]; h.tee = null; h.targets = []; h.lastCenter = null; h.rotation = 0; h.isRotationOn = false; applyHoleState(); saveToStorage(); }
+        function centerToUser() { map.flyTo({ center: userPos, zoom: 18 }); }
         function toggleGameList(s=null) { const ov=document.getElementById('gamelist-overlay'); if(s===null) ov.classList.toggle('active'); else s?ov.classList.add('active'):ov.classList.remove('active'); if(ov.classList.contains('active')) renderGameList(); }
         function renderGameList() { 
             const c=document.getElementById('game-items-container'); c.innerHTML=''; 
             games.forEach(g=>{ 
-                let r=g.holeData.reduce((a,h)=>a+h.score,0); 
-                c.innerHTML+=`<div onclick="loadGame(${g.id})" class="p-5 rounded-[24px] border-2 ${g.id===currentGameId?'border-green-600 bg-green-50 shadow-inner':'border-gray-100 bg-white shadow-sm'} flex justify-between items-center active:scale-95 transition-all mb-2 shadow-sm"><div class="flex flex-col"><span class="text-[11px] font-bold text-gray-400 tracking-widest uppercase mb-1">${g.date}</span><span class="text-xl font-black text-gray-800">Round #${g.id.toString().slice(-4)}</span></div><span class="text-2xl font-black ${r>0?'text-red-500':(r<0?'text-blue-500':'text-gray-300')}">${r===0?'E':(r>0?'+'+r:r)}</span></div>`; 
+                let r=g.holeData.reduce((acc,h)=>acc+h.score,0); 
+                c.innerHTML+=`<div onclick="loadGame(${g.id})" class="p-5 rounded-[24px] border-2 ${g.id===currentGameId?'border-green-600 bg-green-50 shadow-inner':'border-gray-100 bg-white shadow-sm'} flex justify-between items-center active:scale-95 transition-all mb-2"><div class="flex flex-col"><span class="text-[11px] font-bold text-gray-400 tracking-widest uppercase mb-1">${g.date}</span><span class="text-xl font-black text-gray-800">Round #${g.id.toString().slice(-4)}</span></div><span class="text-2xl font-black ${r>0?'text-red-500':(r<0?'text-blue-500':'text-gray-300')}">${r===0?'E':(r>0?'+'+r:r)}</span></div>`; 
             }); lucide.createIcons(); 
         }
         function updateScore(v) { holeData[currentHole-1].score += v; updateUI(); saveToStorage(); }
+
         window.onload = init;
     </script>
 </body>
