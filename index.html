@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Smart Golf Caddy Pro v44</title>
+    <title>Smart Golf Caddy Pro v45</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
     <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
@@ -15,13 +15,29 @@
         .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.3); }
         .glass-dark { background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.15); }
         
-        /* Pin & Anchor Optimization */
-        .mkr-container { cursor: pointer; display: flex; flex-direction: row; align-items: flex-end; justify-content: flex-start; width: auto; height: auto; }
+        /* --- Marker Alignment Fix (v45) --- */
+        .mkr-container { 
+            cursor: pointer; 
+            display: flex; 
+            flex-direction: row; 
+            align-items: flex-end; 
+            justify-content: flex-start;
+            /* Shift slightly left to align the pole (at x=4) with the coordinate point */
+            transform: translateX(-4px); 
+        }
         .mkr-flag-wrapper { display: flex; align-items: flex-end; position: relative; }
         .color-tee { color: #3b82f6; }
         .color-mid { color: #f59e0b; }
         .color-pin { color: #ef4444; }
-        .mkr-label { font-size: 11px; font-weight: 900; background: white; color: black; padding: 1px 6px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.2); margin-left: 4px; margin-bottom: 2px; box-shadow: 0 2px 4px rgba(0,0,0,0.3); white-space: nowrap; }
+        .mkr-label { 
+            font-size: 11px; font-weight: 900; 
+            background: white; color: black; 
+            padding: 1px 6px; border-radius: 4px; 
+            border: 1px solid rgba(0,0,0,0.2); 
+            margin-left: 2px; margin-bottom: 2px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3); 
+            white-space: nowrap; 
+        }
 
         .user-dot { width: 22px; height: 22px; border: 3px solid white; border-radius: 50%; box-shadow: 0 0 15px rgba(0, 0, 0, 0.5); transition: background-color 0.3s; }
         .gps-good { background-color: #007AFF; }
@@ -31,7 +47,6 @@
         .view-overlay { position: fixed; inset: 0; z-index: 2000; background: rgba(0,0,0,0.75); backdrop-filter: blur(10px); display: none; padding: 20px; align-items: center; justify-content: center; }
         .view-overlay.active { display: flex; }
 
-        /* Floating Scoreboard Items */
         .nav-score-item { display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 0.2s; cursor: pointer; border-radius: 8px; padding: 4px 0; min-width: 0; flex: 1; }
         .nav-active-hole { background: rgba(21, 128, 61, 0.5); border: 1px solid rgba(34, 197, 94, 0.7); }
 
@@ -55,8 +70,8 @@
 </head>
 <body class="no-select">
 
-    <!-- Top/Bottom Status Bar -->
-    <div id="status-bar" class="fixed left-0 right-0 z-[1000] px-4 flex flex-col items-center pointer-events-none layout-animated status-top">
+    <!-- Status Bar (Default at Bottom) -->
+    <div id="status-bar" class="fixed left-0 right-0 z-[1000] px-4 flex flex-col items-center pointer-events-none layout-animated status-bottom">
         <div class="flex justify-center items-center w-full max-w-lg">
             <div class="glass p-3 rounded-[32px] shadow-2xl flex items-center gap-4 border-b-4 border-green-600 pointer-events-auto w-full">
                 <div id="hole-box" class="bg-green-700 text-white shrink-0 shadow-lg">
@@ -87,7 +102,7 @@
 
     <div id="map"></div>
 
-    <!-- Right-Side Controls -->
+    <!-- Right-Side Controls (Centered Vertically) -->
     <div id="right-controls" class="fixed right-4 top-1/2 -translate-y-1/2 z-[1000] flex flex-col gap-4">
         <button onclick="toggleGameList()" class="glass w-14 h-14 rounded-full flex items-center justify-center text-gray-700 shadow-2xl active:scale-90 border-2 border-white/50"><i data-lucide="home"></i></button>
         <button id="rotate-btn" onclick="maximizeHoleView()" class="glass w-14 h-14 rounded-full flex items-center justify-center text-gray-500 shadow-2xl active:scale-90 border-2 border-white/50"><i data-lucide="compass"></i></button>
@@ -96,26 +111,26 @@
         <button onclick="resetHole()" class="glass w-14 h-14 rounded-full flex items-center justify-center text-red-500 shadow-2xl active:scale-90 border-2 border-white/50"><i data-lucide="trash-2"></i></button>
     </div>
 
-    <!-- Floating Scoreboard / Navigation -->
-    <div id="nav-bar" class="fixed left-0 right-0 z-[1000] px-2 pointer-events-none flex justify-center layout-animated nav-bottom">
+    <!-- Nav Bar (Default at Top) -->
+    <div id="nav-bar" class="fixed left-0 right-0 z-[1000] px-2 pointer-events-none flex justify-center layout-animated nav-top">
         <div class="glass-dark px-3 py-3 rounded-[32px] flex flex-col gap-1.5 w-full max-w-5xl pointer-events-auto shadow-2xl border border-white/10">
             <div class="flex justify-between items-center px-2 mb-0.5">
-                <!-- 요약 스코어: OUT / IN / TOTAL -->
+                <!-- Summary Scores: OUT / IN / TOTAL with Strokes and Rel -->
                 <div class="flex items-center gap-3">
                     <div class="flex items-center gap-1.5">
                         <span class="text-[9px] font-bold text-white/40 uppercase tracking-tighter">Out</span>
-                        <span id="summary-out" class="text-[11px] font-black text-white tracking-tighter">E</span>
+                        <span id="summary-out" class="text-[11px] font-black text-white tracking-tighter">36(E)</span>
                     </div>
                     <div class="w-[1px] h-2 bg-white/20"></div>
                     <div class="flex items-center gap-1.5">
                         <span class="text-[9px] font-bold text-white/40 uppercase tracking-tighter">In</span>
-                        <span id="summary-in" class="text-[11px] font-black text-white tracking-tighter">E</span>
+                        <span id="summary-in" class="text-[11px] font-black text-white tracking-tighter">36(E)</span>
                     </div>
                     <div class="w-[1px] h-2 bg-white/20"></div>
                     <div class="flex items-center gap-1.5">
                         <span class="text-[9px] font-bold text-white/40 uppercase tracking-tighter">Total</span>
-                        <span id="mini-total-strokes" class="text-[11px] font-black text-white tracking-tighter">0</span>
-                        <span id="mini-total-rel" class="text-[10px] font-bold text-white/60">E</span>
+                        <span id="mini-total-strokes" class="text-[11px] font-black text-white tracking-tighter">72</span>
+                        <span id="mini-total-rel" class="text-[10px] font-bold text-white/60">(E)</span>
                     </div>
                 </div>
                 <span class="text-[8px] font-bold text-white/20 uppercase tracking-widest">Hole Navigation</span>
@@ -124,9 +139,9 @@
         </div>
     </div>
 
-    <div id="toast-container" style="bottom: 160px;"><div id="toast" class="toast"></div></div>
+    <div id="toast-container" style="top: 160px;"><div id="toast" class="toast"></div></div>
 
-    <!-- Game List Modal -->
+    <!-- Rounding History Modal -->
     <div id="gamelist-overlay" class="view-overlay">
         <div class="glass w-full max-w-[460px] rounded-[40px] overflow-hidden shadow-2xl flex flex-col p-8 max-h-[85vh]">
             <div class="flex justify-between items-center mb-6">
@@ -139,14 +154,15 @@
     </div>
 
     <script>
-        // --- Core Configuration ---
-        const GAMES_STORAGE_KEY = 'GOLF_CADDY_DATA_V44';
-        const LAYOUT_STORAGE_KEY = 'GOLF_CADDY_LAYOUT_V44';
+        // --- Configuration ---
+        const GAMES_STORAGE_KEY = 'GOLF_CADDY_DATA_V45';
+        const LAYOUT_STORAGE_KEY = 'GOLF_CADDY_LAYOUT_V45';
         const DEFAULT_ZOOM = 16;
         const MAX_ZOOM = 18;
 
+        // Default layout is REVERSED (Nav Top, Status Bottom)
+        let isLayoutReversed = localStorage.getItem(LAYOUT_STORAGE_KEY) === null ? true : JSON.parse(localStorage.getItem(LAYOUT_STORAGE_KEY));
         let games = JSON.parse(localStorage.getItem(GAMES_STORAGE_KEY)) || [];
-        let isLayoutReversed = JSON.parse(localStorage.getItem(LAYOUT_STORAGE_KEY)) || false;
         
         let currentGameId = null, userPos = [126.9780, 37.5665], currentHole = 1, holeData = [];
         let map, userMarker, mapMarkers = [], ringMarkers = [];
@@ -165,7 +181,7 @@
             if (games.length > 0) loadGame(games[0].id); else createNewGame();
         }
 
-        // --- Layout & Persistence ---
+        // --- Layout Switching ---
         window.toggleLayoutMode = () => {
             isLayoutReversed = !isLayoutReversed;
             localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(isLayoutReversed));
@@ -177,16 +193,19 @@
             const nav = document.getElementById('nav-bar');
             const toast = document.getElementById('toast-container');
             if (isLayoutReversed) {
-                status.classList.remove('status-top'); status.classList.add('status-bottom');
-                nav.classList.remove('nav-bottom'); nav.classList.add('nav-top');
+                // Nav TOP, Status BOTTOM
+                status.classList.replace('status-top', 'status-bottom');
+                nav.classList.replace('nav-bottom', 'nav-top');
                 toast.style.bottom = 'auto'; toast.style.top = '160px';
             } else {
-                status.classList.remove('status-bottom'); status.classList.add('status-top');
-                nav.classList.remove('nav-top'); nav.classList.add('nav-bottom');
+                // Status TOP, Nav BOTTOM
+                status.classList.replace('status-bottom', 'status-top');
+                nav.classList.replace('nav-top', 'nav-bottom');
                 toast.style.top = 'auto'; toast.style.bottom = '160px';
             }
         }
 
+        // --- Persistence ---
         function saveToLocal() {
             const idx = games.findIndex(g => g.id === currentGameId);
             if (idx !== -1) games[idx].holeData = holeData;
@@ -225,6 +244,7 @@
                     },
                     center: userPos, zoom: DEFAULT_ZOOM, maxZoom: MAX_ZOOM, attributionControl: false
                 });
+
                 map.on('load', () => {
                     isMapLoaded = true;
                     const el = document.createElement('div');
@@ -232,7 +252,9 @@
                     userMarker = new maplibregl.Marker({ element: el }).setLngLat(userPos).addTo(map);
                     if (currentGameId) applyHoleState();
                 });
+
                 map.on('click', handleMapClick);
+
                 map.on('moveend', () => {
                     if (!isMapLoaded) return;
                     const h = holeData[currentHole-1];
@@ -265,8 +287,11 @@
             if (!isMapLoaded) return;
             const h = holeData[currentHole-1];
             const coord = [e.lngLat.lng, e.lngLat.lat];
-            if (!h.tee) { h.tee = [...userPos]; h.targets.push(coord); showToast("현재 위치를 티박스로 설정했습니다."); }
-            else { h.targets.push(coord); }
+            if (!h.tee) {
+                h.tee = [...userPos]; 
+                h.targets.push(coord); 
+                showToast("현재 위치를 티박스로 설정했습니다.");
+            } else { h.targets.push(coord); }
             sortAndDraw(); saveToLocal();
         }
 
@@ -298,8 +323,10 @@
             ['course-line'].concat(RING_CONFIG.map(r => `ring-${r.dist}`)).forEach(id => {
                 if (map.getLayer(id)) map.removeLayer(id); if (map.getSource(id)) map.removeSource(id);
             });
+
             const h = holeData[currentHole-1]; if (!h || !h.tee) return;
             const fullPath = [h.tee, ...h.targets];
+
             if (h.targets.length > 0) {
                 const lastPin = h.targets[h.targets.length - 1];
                 RING_CONFIG.forEach(conf => {
@@ -311,17 +338,31 @@
                     ringMarkers.push(rm);
                 });
             }
+
             if (fullPath.length > 1) {
                 map.addSource('course-line', { type: 'geojson', data: { type: 'Feature', geometry: { type: 'LineString', coordinates: fullPath } } });
                 map.addLayer({ id: 'course-line', type: 'line', source: 'course-line', paint: { 'line-color': '#ffffff', 'line-width': 3, 'line-dasharray': [2, 1.5] } });
             }
+
             fullPath.forEach((coord, i) => {
-                const el = document.createElement('div'); el.className = 'mkr-container';
+                const el = document.createElement('div');
+                el.className = 'mkr-container';
                 let typeColor = 'color-mid', labelTxt = i;
                 if (i === 0) { typeColor = 'color-tee'; labelTxt = 'Tee'; }
                 else if (i === fullPath.length - 1) { typeColor = 'color-pin'; labelTxt = i; }
-                el.innerHTML = `<div class="mkr-flag-wrapper ${typeColor}"><svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="currentColor" stroke="white" stroke-width="1.8" style="display: block;"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></svg></div><div class="mkr-label">${labelTxt}</div>`;
+
+                el.innerHTML = `
+                    <div class="mkr-flag-wrapper ${typeColor}">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="currentColor" stroke="white" stroke-width="1.8" style="display: block;">
+                            <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/>
+                        </svg>
+                    </div>
+                    <div class="mkr-label">${labelTxt}</div>
+                `;
+
+                // Anchor 'bottom-left' combined with transform: translateX(-4px) ensures pole alignment
                 const m = new maplibregl.Marker({ element: el, draggable: true, rotationAlignment: 'viewport', anchor: 'bottom-left' }).setLngLat(coord).addTo(map);
+                
                 m.on('dragend', () => {
                     const n = m.getLngLat(); if (i === 0) h.tee = [n.lng, n.lat]; else h.targets[i-1] = [n.lng, n.lat];
                     sortAndDraw(); saveToLocal();
@@ -393,28 +434,16 @@
             updateCurrentDist(); updateNavigationGrid();
         }
 
-        // --- Core Scoring & Summary Logic ---
         function updateNavigationGrid() {
             const container = document.getElementById('nav-grid-container'); container.innerHTML = '';
-            let sumOutRel = 0, sumInRel = 0, sumOutPar = 0, sumInPar = 0;
-            
-            holeData.forEach((h, idx) => {
-                if (idx < 9) { sumOutRel += h.score; sumOutPar += h.par; }
-                else { sumInRel += h.score; sumInPar += h.par; }
-
-                const rel = h.score === 0 ? "-" : (h.score > 0 ? `+${h.score}` : h.score);
-                const relColor = h.score > 0 ? "text-red-400" : (h.score < 0 ? "text-blue-400" : "text-white/30");
-                const sy = h.par >= 5 ? "—" : (h.par === 3 ? "·" : "");
-                
-                let numColorClass = "text-white/30";
-                const blockSum = (idx < 9) ? sumOutPar : sumInPar; // This is not quite right in forEach, let's pre-calculate
-            });
-
-            // Re-calculate sums for proper highlighting
+            let sumOutRel = 0, sumInRel = 0, sumOutStr = 0, sumInStr = 0;
             let actualSumOutPar = holeData.slice(0,9).reduce((a,b)=>a+b.par,0);
             let actualSumInPar = holeData.slice(9,18).reduce((a,b)=>a+b.par,0);
 
             holeData.forEach((h, idx) => {
+                if (idx < 9) { sumOutRel += h.score; sumOutStr += (h.par + h.score); }
+                else { sumInRel += h.score; sumInStr += (h.par + h.score); }
+
                 const rel = h.score === 0 ? "-" : (h.score > 0 ? `+${h.score}` : h.score);
                 const relColor = h.score > 0 ? "text-red-400" : (h.score < 0 ? "text-blue-400" : "text-white/30");
                 const sy = h.par >= 5 ? "—" : (h.par === 3 ? "·" : "");
@@ -431,28 +460,26 @@
                     </div>`;
             });
 
-            // Summary UI
+            // Summary UI: Strokes + Rel combined
             const outRelStr = sumOutRel === 0 ? "E" : (sumOutRel > 0 ? `+${sumOutRel}` : sumOutRel);
             const inRelStr = sumInRel === 0 ? "E" : (sumInRel > 0 ? `+${sumInRel}` : sumInRel);
             const totalRel = sumOutRel + sumInRel;
             const totalRelStr = totalRel === 0 ? "E" : (totalRel > 0 ? `+${totalRel}` : totalRel);
-            const totalStrokes = actualSumOutPar + actualSumInPar + totalRel;
 
             const outEl = document.getElementById('summary-out');
-            outEl.innerText = outRelStr;
+            outEl.innerText = `${sumOutStr}(${outRelStr})`;
             outEl.className = `text-[11px] font-black tracking-tighter ${sumOutRel > 0 ? 'text-red-400' : (sumOutRel < 0 ? 'text-blue-400' : 'text-white')}`;
 
             const inEl = document.getElementById('summary-in');
-            inEl.innerText = inRelStr;
+            inEl.innerText = `${sumInStr}(${inRelStr})`;
             inEl.className = `text-[11px] font-black tracking-tighter ${sumInRel > 0 ? 'text-red-400' : (sumInRel < 0 ? 'text-blue-400' : 'text-white')}`;
 
-            document.getElementById('mini-total-strokes').innerText = totalStrokes;
+            document.getElementById('mini-total-strokes').innerText = sumOutStr + sumInStr;
             const tRelEl = document.getElementById('mini-total-rel');
             tRelEl.innerText = `(${totalRelStr})`;
             tRelEl.className = `text-[10px] font-bold ${totalRel > 0 ? 'text-red-400' : (totalRel < 0 ? 'text-blue-400' : 'text-white/60')}`;
         }
 
-        // --- Helpers ---
         function getDist(p1, p2) { 
             const R = 6371e3; const dLat = (p2[1]-p1[1])*Math.PI/180; const dLon = (p2[0]-p1[0])*Math.PI/180;
             const a = Math.sin(dLat/2)**2 + Math.cos(p1[1]*Math.PI/180)*Math.cos(p2[1]*Math.PI/180)*Math.sin(dLon/2)**2;
