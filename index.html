@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Smart Golf Caddy Pro v45</title>
+    <title>Smart Golf Caddy Pro v46</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
     <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
@@ -15,29 +15,13 @@
         .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.3); }
         .glass-dark { background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.15); }
         
-        /* --- Marker Alignment Fix (v45) --- */
-        .mkr-container { 
-            cursor: pointer; 
-            display: flex; 
-            flex-direction: row; 
-            align-items: flex-end; 
-            justify-content: flex-start;
-            /* Shift slightly left to align the pole (at x=4) with the coordinate point */
-            transform: translateX(-4px); 
-        }
+        /* Pin Alignment Correction: Align pole with coordinates */
+        .mkr-container { cursor: pointer; display: flex; flex-direction: row; align-items: flex-end; justify-content: flex-start; width: auto; height: auto; transform: translateX(-4px); }
         .mkr-flag-wrapper { display: flex; align-items: flex-end; position: relative; }
         .color-tee { color: #3b82f6; }
         .color-mid { color: #f59e0b; }
         .color-pin { color: #ef4444; }
-        .mkr-label { 
-            font-size: 11px; font-weight: 900; 
-            background: white; color: black; 
-            padding: 1px 6px; border-radius: 4px; 
-            border: 1px solid rgba(0,0,0,0.2); 
-            margin-left: 2px; margin-bottom: 2px; 
-            box-shadow: 0 2px 4px rgba(0,0,0,0.3); 
-            white-space: nowrap; 
-        }
+        .mkr-label { font-size: 11px; font-weight: 900; background: white; color: black; padding: 1px 6px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.2); margin-left: 2px; margin-bottom: 2px; box-shadow: 0 2px 4px rgba(0,0,0,0.3); white-space: nowrap; }
 
         .user-dot { width: 22px; height: 22px; border: 3px solid white; border-radius: 50%; box-shadow: 0 0 15px rgba(0, 0, 0, 0.5); transition: background-color 0.3s; }
         .gps-good { background-color: #007AFF; }
@@ -70,7 +54,7 @@
 </head>
 <body class="no-select">
 
-    <!-- Status Bar (Default at Bottom) -->
+    <!-- Status Bar (Hole Adjuster) -->
     <div id="status-bar" class="fixed left-0 right-0 z-[1000] px-4 flex flex-col items-center pointer-events-none layout-animated status-bottom">
         <div class="flex justify-center items-center w-full max-w-lg">
             <div class="glass p-3 rounded-[32px] shadow-2xl flex items-center gap-4 border-b-4 border-green-600 pointer-events-auto w-full">
@@ -102,7 +86,7 @@
 
     <div id="map"></div>
 
-    <!-- Right-Side Controls (Centered Vertically) -->
+    <!-- Controls -->
     <div id="right-controls" class="fixed right-4 top-1/2 -translate-y-1/2 z-[1000] flex flex-col gap-4">
         <button onclick="toggleGameList()" class="glass w-14 h-14 rounded-full flex items-center justify-center text-gray-700 shadow-2xl active:scale-90 border-2 border-white/50"><i data-lucide="home"></i></button>
         <button id="rotate-btn" onclick="maximizeHoleView()" class="glass w-14 h-14 rounded-full flex items-center justify-center text-gray-500 shadow-2xl active:scale-90 border-2 border-white/50"><i data-lucide="compass"></i></button>
@@ -111,11 +95,10 @@
         <button onclick="resetHole()" class="glass w-14 h-14 rounded-full flex items-center justify-center text-red-500 shadow-2xl active:scale-90 border-2 border-white/50"><i data-lucide="trash-2"></i></button>
     </div>
 
-    <!-- Nav Bar (Default at Top) -->
+    <!-- Navigation / Floating Scoreboard -->
     <div id="nav-bar" class="fixed left-0 right-0 z-[1000] px-2 pointer-events-none flex justify-center layout-animated nav-top">
         <div class="glass-dark px-3 py-3 rounded-[32px] flex flex-col gap-1.5 w-full max-w-5xl pointer-events-auto shadow-2xl border border-white/10">
             <div class="flex justify-between items-center px-2 mb-0.5">
-                <!-- Summary Scores: OUT / IN / TOTAL with Strokes and Rel -->
                 <div class="flex items-center gap-3">
                     <div class="flex items-center gap-1.5">
                         <span class="text-[9px] font-bold text-white/40 uppercase tracking-tighter">Out</span>
@@ -129,8 +112,7 @@
                     <div class="w-[1px] h-2 bg-white/20"></div>
                     <div class="flex items-center gap-1.5">
                         <span class="text-[9px] font-bold text-white/40 uppercase tracking-tighter">Total</span>
-                        <span id="mini-total-strokes" class="text-[11px] font-black text-white tracking-tighter">72</span>
-                        <span id="mini-total-rel" class="text-[10px] font-bold text-white/60">(E)</span>
+                        <span id="summary-total" class="text-[11px] font-black text-white tracking-tighter">72(E)</span>
                     </div>
                 </div>
                 <span class="text-[8px] font-bold text-white/20 uppercase tracking-widest">Hole Navigation</span>
@@ -141,7 +123,6 @@
 
     <div id="toast-container" style="top: 160px;"><div id="toast" class="toast"></div></div>
 
-    <!-- Rounding History Modal -->
     <div id="gamelist-overlay" class="view-overlay">
         <div class="glass w-full max-w-[460px] rounded-[40px] overflow-hidden shadow-2xl flex flex-col p-8 max-h-[85vh]">
             <div class="flex justify-between items-center mb-6">
@@ -154,13 +135,12 @@
     </div>
 
     <script>
-        // --- Configuration ---
-        const GAMES_STORAGE_KEY = 'GOLF_CADDY_DATA_V45';
-        const LAYOUT_STORAGE_KEY = 'GOLF_CADDY_LAYOUT_V45';
+        // --- Core Configuration ---
+        const GAMES_STORAGE_KEY = 'GOLF_CADDY_DATA_V46';
+        const LAYOUT_STORAGE_KEY = 'GOLF_CADDY_LAYOUT_V46';
         const DEFAULT_ZOOM = 16;
         const MAX_ZOOM = 18;
 
-        // Default layout is REVERSED (Nav Top, Status Bottom)
         let isLayoutReversed = localStorage.getItem(LAYOUT_STORAGE_KEY) === null ? true : JSON.parse(localStorage.getItem(LAYOUT_STORAGE_KEY));
         let games = JSON.parse(localStorage.getItem(GAMES_STORAGE_KEY)) || [];
         
@@ -174,14 +154,10 @@
         ];
 
         function init() {
-            lucide.createIcons();
-            initMap();
-            watchLocation();
-            applyLayoutMode();
+            lucide.createIcons(); initMap(); watchLocation(); applyLayoutMode();
             if (games.length > 0) loadGame(games[0].id); else createNewGame();
         }
 
-        // --- Layout Switching ---
         window.toggleLayoutMode = () => {
             isLayoutReversed = !isLayoutReversed;
             localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(isLayoutReversed));
@@ -189,23 +165,16 @@
         };
 
         function applyLayoutMode() {
-            const status = document.getElementById('status-bar');
-            const nav = document.getElementById('nav-bar');
-            const toast = document.getElementById('toast-container');
+            const status = document.getElementById('status-bar'), nav = document.getElementById('nav-bar'), toast = document.getElementById('toast-container');
             if (isLayoutReversed) {
-                // Nav TOP, Status BOTTOM
-                status.classList.replace('status-top', 'status-bottom');
-                nav.classList.replace('nav-bottom', 'nav-top');
+                status.classList.replace('status-top', 'status-bottom'); nav.classList.replace('nav-bottom', 'nav-top');
                 toast.style.bottom = 'auto'; toast.style.top = '160px';
             } else {
-                // Status TOP, Nav BOTTOM
-                status.classList.replace('status-bottom', 'status-top');
-                nav.classList.replace('nav-top', 'nav-bottom');
+                status.classList.replace('status-bottom', 'status-top'); nav.classList.replace('nav-top', 'nav-bottom');
                 toast.style.top = 'auto'; toast.style.bottom = '160px';
             }
         }
 
-        // --- Persistence ---
         function saveToLocal() {
             const idx = games.findIndex(g => g.id === currentGameId);
             if (idx !== -1) games[idx].holeData = holeData;
@@ -213,26 +182,19 @@
         }
 
         window.loadGame = (id) => {
-            const game = games.find(g => g.id === id);
-            if (!game) return;
-            currentGameId = id;
-            holeData = JSON.parse(JSON.stringify(game.holeData));
-            currentHole = 1;
+            const game = games.find(g => g.id === id); if (!game) return;
+            currentGameId = id; holeData = JSON.parse(JSON.stringify(game.holeData)); currentHole = 1;
             if (isMapLoaded) applyHoleState();
             toggleGameList(false);
         };
 
         window.createNewGame = () => {
             const newGame = { id: Date.now().toString(), date: new Date().toISOString().split('T')[0], timestamp: Date.now(), holeData: Array.from({ length: 18 }, (_, i) => ({ num: i + 1, par: 4, score: 0, tee: null, targets: [], isRotationOn: false, rotation: 0, zoom: 16, lastCenter: null })) };
-            games.unshift(newGame);
-            currentGameId = newGame.id;
-            holeData = newGame.holeData;
-            saveToLocal();
-            if (isMapLoaded) applyHoleState();
+            games.unshift(newGame); currentGameId = newGame.id; holeData = newGame.holeData;
+            saveToLocal(); if (isMapLoaded) applyHoleState();
             toggleGameList(false);
         };
 
-        // --- Map Engine ---
         function initMap() {
             try {
                 map = new maplibregl.Map({
@@ -244,25 +206,19 @@
                     },
                     center: userPos, zoom: DEFAULT_ZOOM, maxZoom: MAX_ZOOM, attributionControl: false
                 });
-
                 map.on('load', () => {
                     isMapLoaded = true;
-                    const el = document.createElement('div');
-                    el.className = 'user-dot gps-good';
+                    const el = document.createElement('div'); el.className = 'user-dot gps-good';
                     userMarker = new maplibregl.Marker({ element: el }).setLngLat(userPos).addTo(map);
                     if (currentGameId) applyHoleState();
                 });
-
                 map.on('click', handleMapClick);
-
                 map.on('moveend', () => {
                     if (!isMapLoaded) return;
                     const h = holeData[currentHole-1];
                     if (h && map.getCenter()) {
                         h.lastCenter = [map.getCenter().lng, map.getCenter().lat];
-                        h.zoom = map.getZoom();
-                        h.rotation = map.getBearing();
-                        saveToLocal();
+                        h.zoom = map.getZoom(); h.rotation = map.getBearing(); saveToLocal();
                     }
                 });
             } catch (e) { showToast("지도를 불러올 수 없습니다."); }
@@ -271,12 +227,11 @@
         function watchLocation() {
             if (navigator.geolocation) {
                 navigator.geolocation.watchPosition(p => {
-                    const lat = p.coords.latitude, lng = p.coords.longitude, acc = p.coords.accuracy;
-                    userPos = [lng, lat];
+                    userPos = [p.coords.longitude, p.coords.latitude];
                     if (userMarker) {
                         userMarker.setLngLat(userPos);
                         const el = userMarker.getElement();
-                        if (acc > 30) el.classList.replace('gps-good', 'gps-weak'); else el.classList.replace('gps-weak', 'gps-good');
+                        if (p.coords.accuracy > 30) el.classList.replace('gps-good', 'gps-weak'); else el.classList.replace('gps-weak', 'gps-good');
                     }
                     updateCurrentDist();
                 }, null, { enableHighAccuracy: true });
@@ -285,13 +240,9 @@
 
         function handleMapClick(e) {
             if (!isMapLoaded) return;
-            const h = holeData[currentHole-1];
-            const coord = [e.lngLat.lng, e.lngLat.lat];
-            if (!h.tee) {
-                h.tee = [...userPos]; 
-                h.targets.push(coord); 
-                showToast("현재 위치를 티박스로 설정했습니다.");
-            } else { h.targets.push(coord); }
+            const h = holeData[currentHole-1]; const coord = [e.lngLat.lng, e.lngLat.lat];
+            if (!h.tee) { h.tee = [...userPos]; h.targets.push(coord); showToast("현재 위치를 티박스로 설정했습니다."); }
+            else { h.targets.push(coord); }
             sortAndDraw(); saveToLocal();
         }
 
@@ -299,8 +250,7 @@
             const h = holeData[currentHole-1]; if (!h || !h.tee) return;
             if (h.targets.length > 0) {
                 let sorted = h.targets.map(t => ({ ll: t, d: getDist(h.tee, t) }));
-                sorted.sort((a, b) => a.d - b.d);
-                h.targets = sorted.map(t => t.ll);
+                sorted.sort((a, b) => a.d - b.d); h.targets = sorted.map(t => t.ll);
             }
             renderHoleLayers();
         }
@@ -323,10 +273,8 @@
             ['course-line'].concat(RING_CONFIG.map(r => `ring-${r.dist}`)).forEach(id => {
                 if (map.getLayer(id)) map.removeLayer(id); if (map.getSource(id)) map.removeSource(id);
             });
-
             const h = holeData[currentHole-1]; if (!h || !h.tee) return;
             const fullPath = [h.tee, ...h.targets];
-
             if (h.targets.length > 0) {
                 const lastPin = h.targets[h.targets.length - 1];
                 RING_CONFIG.forEach(conf => {
@@ -338,31 +286,17 @@
                     ringMarkers.push(rm);
                 });
             }
-
             if (fullPath.length > 1) {
                 map.addSource('course-line', { type: 'geojson', data: { type: 'Feature', geometry: { type: 'LineString', coordinates: fullPath } } });
                 map.addLayer({ id: 'course-line', type: 'line', source: 'course-line', paint: { 'line-color': '#ffffff', 'line-width': 3, 'line-dasharray': [2, 1.5] } });
             }
-
             fullPath.forEach((coord, i) => {
-                const el = document.createElement('div');
-                el.className = 'mkr-container';
+                const el = document.createElement('div'); el.className = 'mkr-container';
                 let typeColor = 'color-mid', labelTxt = i;
                 if (i === 0) { typeColor = 'color-tee'; labelTxt = 'Tee'; }
                 else if (i === fullPath.length - 1) { typeColor = 'color-pin'; labelTxt = i; }
-
-                el.innerHTML = `
-                    <div class="mkr-flag-wrapper ${typeColor}">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="currentColor" stroke="white" stroke-width="1.8" style="display: block;">
-                            <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/>
-                        </svg>
-                    </div>
-                    <div class="mkr-label">${labelTxt}</div>
-                `;
-
-                // Anchor 'bottom-left' combined with transform: translateX(-4px) ensures pole alignment
+                el.innerHTML = `<div class="mkr-flag-wrapper ${typeColor}"><svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="currentColor" stroke="white" stroke-width="1.8" style="display: block;"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></svg></div><div class="mkr-label">${labelTxt}</div>`;
                 const m = new maplibregl.Marker({ element: el, draggable: true, rotationAlignment: 'viewport', anchor: 'bottom-left' }).setLngLat(coord).addTo(map);
-                
                 m.on('dragend', () => {
                     const n = m.getLngLat(); if (i === 0) h.tee = [n.lng, n.lat]; else h.targets[i-1] = [n.lng, n.lat];
                     sortAndDraw(); saveToLocal();
@@ -385,8 +319,7 @@
 
         window.maximizeHoleView = () => {
             if (!isMapLoaded) return;
-            const h = holeData[currentHole-1];
-            if (!h || !h.tee || h.targets.length === 0) { showToast("핀을 먼저 찍어주세요."); return; }
+            const h = holeData[currentHole-1]; if (!h || !h.tee || h.targets.length === 0) { showToast("핀을 먼저 찍어주세요."); return; }
             if (h.isRotationOn) {
                 h.isRotationOn = false; h.rotation = 0; map.flyTo({ bearing: 0, center: h.lastCenter || h.tee, zoom: DEFAULT_ZOOM, speed: 1.2 });
             } else {
@@ -413,8 +346,7 @@
         window.jumpToHole = (num) => { currentHole = num; applyHoleState(); };
         window.cyclePar = () => { 
             const idx = currentHole - 1, h = holeData[idx]; h.par = h.par === 5 ? 3 : h.par + 1; 
-            const start = currentHole <= 9 ? 0 : 9;
-            let sum = 0; for(let i=start; i<start+9; i++) sum += (holeData[i]?.par || 0);
+            const start = currentHole <= 9 ? 0 : 9; let sum = 0; for(let i=start; i<start+9; i++) sum += (holeData[i]?.par || 0);
             if (sum !== 36) showToast(`${currentHole <= 9 ? '전반' : '후반'} 9홀 합계: ${sum} (목표: 36)`);
             updateUI(); saveToLocal(); 
         };
@@ -432,6 +364,12 @@
             const tag = document.getElementById('score-rel-tag'); tag.innerText = rel === "E" ? "Even" : rel;
             tag.className = `px-2 py-0.5 rounded-lg text-[11px] font-black uppercase ${h.score > 0 ? 'bg-red-100 text-red-600' : (h.score < 0 ? 'bg-blue-100 text-blue-600' : 'bg-green-50 text-green-700')}`;
             updateCurrentDist(); updateNavigationGrid();
+        }
+
+        // --- Unified Formatting Helper ---
+        function getScoreFormat(strokes, rel) {
+            const relStr = rel === 0 ? "E" : (rel > 0 ? `+${rel}` : rel);
+            return `${strokes}(${relStr})`;
         }
 
         function updateNavigationGrid() {
@@ -452,32 +390,24 @@
                 if (blockSum > 36) numColorClass = "text-red-500 font-bold";
                 else if (blockSum < 36) numColorClass = "text-blue-400 font-bold";
 
-                container.innerHTML += `
-                    <div onclick="jumpToHole(${h.num})" class="nav-score-item ${idx+1===currentHole?'nav-active-hole':''}">
-                        <span class="text-[9px] text-white/50 h-2 flex items-center mb-0.5 font-black">${sy}</span>
-                        <span class="text-[8px] ${numColorClass} h-2">${h.num}</span>
-                        <span class="text-[10px] font-black ${relColor} mt-1">${rel}</span>
-                    </div>`;
+                container.innerHTML += `<div onclick="jumpToHole(${h.num})" class="nav-score-item ${idx+1===currentHole?'nav-active-hole':''}"><span class="text-[9px] text-white/50 h-2 flex items-center mb-0.5 font-black">${sy}</span><span class="text-[8px] ${numColorClass} h-2">${h.num}</span><span class="text-[10px] font-black ${relColor} mt-1">${rel}</span></div>`;
             });
 
-            // Summary UI: Strokes + Rel combined
-            const outRelStr = sumOutRel === 0 ? "E" : (sumOutRel > 0 ? `+${sumOutRel}` : sumOutRel);
-            const inRelStr = sumInRel === 0 ? "E" : (sumInRel > 0 ? `+${sumInRel}` : sumInRel);
+            // Apply Unified Format to Summaries
             const totalRel = sumOutRel + sumInRel;
-            const totalRelStr = totalRel === 0 ? "E" : (totalRel > 0 ? `+${totalRel}` : totalRel);
+            const totalStr = sumOutStr + sumInStr;
 
             const outEl = document.getElementById('summary-out');
-            outEl.innerText = `${sumOutStr}(${outRelStr})`;
+            outEl.innerText = getScoreFormat(sumOutStr, sumOutRel);
             outEl.className = `text-[11px] font-black tracking-tighter ${sumOutRel > 0 ? 'text-red-400' : (sumOutRel < 0 ? 'text-blue-400' : 'text-white')}`;
 
             const inEl = document.getElementById('summary-in');
-            inEl.innerText = `${sumInStr}(${inRelStr})`;
+            inEl.innerText = getScoreFormat(sumInStr, sumInRel);
             inEl.className = `text-[11px] font-black tracking-tighter ${sumInRel > 0 ? 'text-red-400' : (sumInRel < 0 ? 'text-blue-400' : 'text-white')}`;
 
-            document.getElementById('mini-total-strokes').innerText = sumOutStr + sumInStr;
-            const tRelEl = document.getElementById('mini-total-rel');
-            tRelEl.innerText = `(${totalRelStr})`;
-            tRelEl.className = `text-[10px] font-bold ${totalRel > 0 ? 'text-red-400' : (totalRel < 0 ? 'text-blue-400' : 'text-white/60')}`;
+            const totalEl = document.getElementById('summary-total');
+            totalEl.innerText = getScoreFormat(totalStr, totalRel);
+            totalEl.className = `text-[11px] font-black tracking-tighter ${totalRel > 0 ? 'text-red-400' : (totalRel < 0 ? 'text-blue-400' : 'text-white')}`;
         }
 
         function getDist(p1, p2) { 
