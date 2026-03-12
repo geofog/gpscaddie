@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Smart Golf Caddy Pro v17</title>
+    <title>Smart Golf Caddy Pro v18</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -18,7 +18,7 @@
         .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.2); }
         .glass-dark { background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(6px); border: 1px solid rgba(255,255,255,0.1); }
         
-        /* Precision Flag Marker */
+        /* Flag Markers */
         .mkr-base { border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; }
         .mkr-inner { transition: transform 0.6s; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 40px; height: 40px; }
         .color-tee { color: #3b82f6; }
@@ -26,7 +26,7 @@
         .color-pin { color: #ef4444; }
         .mkr-label { font-size: 10px; font-weight: 900; background: white; color: black; padding: 0px 4px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.2); margin-top: -6px; line-height: 1.2; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
 
-        /* Standard Blue Circle for User Location */
+        /* User Location Circle */
         .user-dot-container { display: flex; align-items: center; justify-content: center; }
         .user-dot { 
             width: 14px; height: 14px; 
@@ -37,6 +37,7 @@
         .gps-good { background-color: #007AFF; box-shadow: 0 0 12px rgba(0, 122, 255, 0.6); }
         .gps-weak { background-color: #FFCC00; box-shadow: 0 0 12px rgba(255, 204, 0, 0.6); }
         
+        /* Distance Labels */
         .dist-label-container { border: none !important; background: none !important; }
         .dist-label-box { 
             background: rgba(0,0,0,0.85); color: white; padding: 2px 8px; border-radius: 6px; 
@@ -48,28 +49,26 @@
         .view-overlay { position: fixed; inset: 0; z-index: 2000; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); display: none; padding: 20px; align-items: center; justify-content: center; }
         .view-overlay.active { display: flex; }
 
-        #hole-symbol { font-size: 24px; line-height: 1; height: 16px; display: flex; align-items: center; justify-content: center; margin-bottom: -2px; }
-        
-        /* Floating Navigation Board Styles */
+        /* Navigation Board */
         .nav-score-item { display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 0.2s; cursor: pointer; border-radius: 8px; padding: 4px 0; }
-        .nav-score-item:active { background: rgba(255,255,255,0.1); scale: 0.95; }
         .nav-active-hole { background: rgba(21, 128, 61, 0.3); border: 1px solid rgba(34, 197, 94, 0.5); }
+
+        /* Toast Message */
+        #toast-container { position: fixed; bottom: 120px; left: 50%; transform: translateX(-50%); z-index: 3000; pointer-events: none; }
+        .toast { background: rgba(0, 0, 0, 0.8); color: white; padding: 10px 20px; border-radius: 12px; font-size: 13px; font-weight: bold; opacity: 0; transition: opacity 0.3s, transform 0.3s; transform: translateY(10px); text-align: center; white-space: nowrap; }
+        .toast.show { opacity: 1; transform: translateY(0); }
     </style>
 </head>
 <body class="no-select">
 
-    <!-- Top Info Section -->
+    <!-- Top UI (Info & Score) -->
     <div class="fixed top-0 left-0 right-0 z-[1000] p-4 flex flex-col gap-2 pointer-events-none">
         <div class="flex justify-start items-start">
-            <!-- Main Info & Score Control -->
             <div class="glass p-3 rounded-2xl shadow-xl flex items-center gap-4 border-b-4 border-green-600 pointer-events-auto">
-                <!-- Hole Box -->
                 <div id="hole-box" class="flex flex-col items-center justify-center bg-green-700 text-white min-w-[3.5rem] h-14 rounded-xl shadow-lg transition-colors">
-                    <span id="hole-symbol" class="font-black"></span>
+                    <span id="hole-symbol" class="font-black h-4 flex items-center mb-1 text-2xl"></span>
                     <span class="text-xl font-black" id="hole-num">1</span>
                 </div>
-                
-                <!-- Score & Par Control -->
                 <div class="flex flex-col gap-1">
                     <div class="flex items-center gap-2">
                         <button onclick="cyclePar()" class="text-[10px] font-black px-1.5 py-0.5 bg-gray-100 rounded text-gray-500 border active:scale-95">
@@ -77,15 +76,12 @@
                         </button>
                         <span id="score-rel-tag" class="px-1.5 py-0.5 bg-green-50 text-green-700 rounded text-[10px] font-black uppercase tracking-tight">Even</span>
                     </div>
-                    <!-- Integrated Score Buttons -->
                     <div class="flex items-center gap-2 bg-gray-50 p-0.5 rounded-lg border border-gray-100">
                         <button onclick="updateScore(-1)" class="w-8 h-8 flex items-center justify-center bg-white rounded-md shadow-sm active:bg-gray-100"><i data-lucide="minus" class="w-3.5 h-3.5 text-gray-400"></i></button>
                         <span id="score-display" class="w-6 text-center font-black text-gray-800 text-lg leading-none">E</span>
                         <button onclick="updateScore(1)" class="w-8 h-8 flex items-center justify-center bg-white rounded-md shadow-sm active:bg-gray-100"><i data-lucide="plus" class="w-3.5 h-3.5 text-gray-400"></i></button>
                     </div>
                 </div>
-
-                <!-- Distance -->
                 <div class="h-10 w-[1px] bg-gray-200 mx-1"></div>
                 <div class="flex flex-col">
                     <span class="text-[9px] font-bold text-gray-400 uppercase tracking-tighter text-center">Remaining</span>
@@ -104,19 +100,15 @@
         </div>
     </div>
 
-    <!-- Grouped Map Controls (Right Side) -->
+    <!-- Right Controls -->
     <div class="fixed right-4 bottom-40 z-[1000] flex flex-col gap-3">
-        <!-- Home Button (Now grouped here) -->
         <button onclick="toggleGameList()" class="glass w-12 h-12 rounded-full flex items-center justify-center text-gray-700 shadow-xl active:scale-90"><i data-lucide="home"></i></button>
-        <!-- Rotation -->
         <button id="rotate-btn" onclick="toggleRotation()" class="glass w-12 h-12 rounded-full flex items-center justify-center text-gray-500 shadow-xl active:scale-90"><i data-lucide="compass"></i></button>
-        <!-- Locate -->
         <button onclick="centerToUser()" class="glass w-12 h-12 rounded-full flex items-center justify-center text-blue-600 shadow-xl active:scale-90"><i data-lucide="locate-fixed"></i></button>
-        <!-- Clear Pin (Trash Bin) -->
         <button onclick="resetHole()" class="glass w-12 h-12 rounded-full flex items-center justify-center text-red-500 shadow-xl active:scale-90"><i data-lucide="trash-2"></i></button>
     </div>
 
-    <!-- Integrated Floating Navigation Scoreboard (Bottom) -->
+    <!-- Bottom Navigation -->
     <div class="fixed bottom-6 left-4 right-4 z-[1000] pointer-events-none flex justify-center">
         <div class="glass-dark px-3 py-2.5 rounded-[24px] flex flex-col gap-1.5 w-full max-w-2xl pointer-events-auto shadow-2xl border border-white/10">
             <div class="flex justify-between items-center px-2 mb-0.5">
@@ -127,11 +119,13 @@
                 </div>
                 <span class="text-[8px] font-bold text-white/30 uppercase tracking-widest">Hole Navigation</span>
             </div>
-            <!-- Hole Grid Navigation -->
-            <div class="flex justify-between items-stretch gap-1 px-1" id="nav-grid-container">
-                <!-- JS Injected with Par Symbols -->
-            </div>
+            <div class="flex justify-between items-stretch gap-1 px-1" id="nav-grid-container"></div>
         </div>
+    </div>
+
+    <!-- Toast UI -->
+    <div id="toast-container">
+        <div id="toast" class="toast"></div>
     </div>
 
     <!-- Modals -->
@@ -139,7 +133,7 @@
         <div class="bg-white w-full max-w-[420px] rounded-[32px] overflow-hidden shadow-2xl flex flex-col p-6 max-h-[80vh]">
             <div class="flex justify-between items-center mb-6">
                 <div><h2 class="text-xl font-black">History</h2></div>
-                <button onclick="createNewGame()" class="bg-green-700 text-white px-4 py-2 rounded-xl text-sm font-bold active:scale-95"><i data-lucide="plus" class="inline w-4 h-4 mr-1"></i>새 게임</button>
+                <button onclick="createNewGame()" class="bg-green-700 text-white px-4 py-2 rounded-xl text-sm font-bold"><i data-lucide="plus" class="inline w-4 h-4 mr-1"></i>새 게임</button>
             </div>
             <div id="game-items-container" class="flex-1 overflow-y-auto space-y-3"></div>
             <button onclick="toggleGameList(false)" class="mt-4 w-full py-3 bg-gray-100 text-gray-500 rounded-2xl font-bold">닫기</button>
@@ -147,52 +141,44 @@
     </div>
 
     <script>
-        // --- Persistence ---
-        const STORAGE_KEY = 'GOLF_CADDY_GAMES_V17';
+        const STORAGE_KEY = 'GOLF_CADDY_GAMES_V18';
         let games = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
         let currentGameId = null;
-
-        // --- Global State ---
-        let userPos = [37.5665, 126.9780]; 
-        let currentHole = 1;
-        let currentRotation = 0;
-        let holeData = []; 
-
+        let userPos = [37.5665, 126.9780], currentHole = 1, currentRotation = 0, holeData = [];
         let map, userMarker, markers = [], lines = [], labels = [], circles = [];
 
         function init() {
-            lucide.createIcons();
-            initMap();
-            map.whenReady(() => { watchLocation(); });
-            if (games.length > 0) loadGame(games[0].id);
-            else createNewGame();
+            lucide.createIcons(); initMap();
+            map.whenReady(() => watchLocation());
+            if (games.length > 0) loadGame(games[0].id); else createNewGame();
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.innerText = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
         }
 
         function initMap() {
             map = L.map('map', { zoomControl: false, attributionControl: false, maxZoom: 19 }).setView(userPos, 17);
             L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 }).addTo(map);
-            userMarker = null;
             map.on('click', handleMapClick);
-            map.on('zoomend', () => {
-                if (holeData[currentHole-1]) { holeData[currentHole-1].zoom = map.getZoom(); saveToStorage(); }
-            });
+            map.on('zoomend', () => { if (holeData[currentHole-1]) { holeData[currentHole-1].zoom = map.getZoom(); saveToStorage(); } });
         }
 
         function watchLocation() {
             if (navigator.geolocation) {
                 navigator.geolocation.watchPosition(p => {
-                    const lat = p.coords.latitude, lng = p.coords.longitude, accuracy = p.coords.accuracy;
+                    const lat = p.coords.latitude, lng = p.coords.longitude, acc = p.coords.accuracy;
                     userPos = [lat, lng];
                     if (!userMarker) {
-                        userMarker = L.marker(userPos, { 
-                            icon: L.divIcon({ className: 'user-dot-container', html: `<div class="user-dot gps-good"></div>`, iconSize: [20, 20] }),
-                            zIndexOffset: 10000 
-                        }).addTo(map);
+                        userMarker = L.marker(userPos, { icon: L.divIcon({ className: 'user-dot-container', html: `<div class="user-dot gps-good"></div>`, iconSize: [20, 20] }), zIndexOffset: 10000 }).addTo(map);
                     } else { userMarker.setLatLng(userPos); }
                     const dot = document.querySelector('.user-dot');
                     if (dot) {
-                        if (accuracy > 25) { dot.classList.remove('gps-good'); dot.classList.add('gps-weak'); }
-                        else { dot.classList.remove('gps-weak'); dot.classList.add('gps-good'); }
+                        if (acc > 25) { dot.classList.replace('gps-good', 'gps-weak'); }
+                        else { dot.classList.replace('gps-weak', 'gps-good'); }
                     }
                     updateCurrentDist();
                 }, null, { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 });
@@ -203,26 +189,21 @@
             const hole = holeData[currentHole-1];
             if (!hole.tee) hole.tee = [...userPos];
             hole.targets.push([e.latlng.lat, e.latlng.lng]);
-            sortAndDraw();
-            saveToStorage();
+            sortAndDraw(); saveToStorage();
         }
 
         function sortAndDraw() {
-            const hole = holeData[currentHole-1];
-            if (!hole.tee || hole.targets.length === 0) return;
+            const hole = holeData[currentHole-1]; if (!hole.tee || hole.targets.length === 0) return;
             let sorted = hole.targets.map(t => ({ ll: t, d: getDist(hole.tee, t) }));
-            sorted.sort((a, b) => a.d - b.d);
-            hole.targets = sorted.map(t => t.ll);
-            renderHole();
-            if (hole.isRotationOn) applyAutoRotation(); 
+            sorted.sort((a, b) => a.d - b.d); hole.targets = sorted.map(t => t.ll);
+            renderHole(); if (hole.isRotationOn) applyAutoRotation(); 
         }
 
         function renderHole() {
             markers.forEach(m => map.removeLayer(m)); lines.forEach(l => map.removeLayer(l));
             labels.forEach(lb => map.removeLayer(lb)); circles.forEach(c => map.removeLayer(c));
             markers = []; lines = []; labels = []; circles = [];
-            const hole = holeData[currentHole-1];
-            if (!hole || !hole.tee) return;
+            const hole = holeData[currentHole-1]; if (!hole || !hole.tee) return;
             const path = [hole.tee, ...hole.targets];
             if (hole.targets.length > 0) {
                 const finalPin = hole.targets[hole.targets.length - 1];
@@ -234,7 +215,7 @@
                 if (i === 0) { colorClass = 'color-tee'; labelTxt = 'Tee'; }
                 else if (i === path.length - 1) { colorClass = 'color-pin'; labelTxt = i; }
                 const m = L.marker(ll, { 
-                    icon: L.divIcon({ className: `mkr-base`, html: `<div class="mkr-inner" style="transform: rotate(${-currentRotation}deg)"><div class="${colorClass}"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-flag"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></svg></div><div class="mkr-label">${labelTxt}</div></div>`, iconSize: [40, 40], iconAnchor: [6.6, 36.6] }), draggable: true, zIndexOffset: 1000
+                    icon: L.divIcon({ className: `mkr-base`, html: `<div class="mkr-inner" style="transform: rotate(${-currentRotation}deg)"><div class="${colorClass}"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></svg></div><div class="mkr-label">${labelTxt}</div></div>`, iconSize: [40, 40], iconAnchor: [6.6, 36.6] }), draggable: true, zIndexOffset: 1000
                 }).addTo(map);
                 m.on('dragend', (ev) => {
                     const newPos = [ev.target.getLatLng().lat, ev.target.getLatLng().lng];
@@ -243,8 +224,7 @@
                 });
                 m.on('click', (ev) => {
                     L.DomEvent.stopPropagation(ev);
-                    if (hole.targets.length <= 1) resetHole();
-                    else { if (i > 0) { hole.targets.splice(i-1, 1); sortAndDraw(); } else resetHole(); }
+                    if (hole.targets.length <= 1) resetHole(); else { if (i > 0) { hole.targets.splice(i-1, 1); sortAndDraw(); } else resetHole(); }
                     saveToStorage();
                 });
                 markers.push(m);
@@ -258,20 +238,16 @@
             updateMarkerRotations(); updateCurrentDist();
         }
 
-        // --- Logic ---
+        // --- Per-Hole Management (Rule 1 & 2 Applied) ---
         function cyclePar() { 
             const idx = currentHole - 1, h = holeData[idx]; h.par = h.par === 5 ? 3 : h.par + 1; 
+            
+            // Check Sum for Toast
             const startIdx = currentHole <= 9 ? 0 : 9, endIdx = currentHole <= 9 ? 8 : 17;
-            let currentSum = 0; for(let i = startIdx; i <= idx; i++) { currentSum += holeData[i].par; }
-            const remainingCount = endIdx - idx;
-            if (remainingCount > 0) {
-                let targetRemaining = 36 - currentSum;
-                const basePar = Math.max(3, Math.min(5, Math.floor(targetRemaining / remainingCount)));
-                let remainder = targetRemaining - (basePar * remainingCount);
-                for(let i = idx + 1; i <= endIdx; i++) {
-                    let p = basePar; if (remainder > 0 && p < 5) { p++; remainder--; } else if (remainder < 0 && p > 3) { p--; remainder++; }
-                    holeData[i].par = p;
-                }
+            let sum = 0; for(let i = startIdx; i <= endIdx; i++) { sum += holeData[i].par; }
+            
+            if (sum !== 36) {
+                showToast(`${currentHole <= 9 ? '전반' : '후반'} 9홀 합계가 ${sum}입니다. (목표: 36)`);
             }
             updateUI(); saveToStorage(); 
         }
@@ -317,51 +293,31 @@
             else { btn.classList.remove('text-green-600', 'bg-green-50'); currentRotation = 0; wrapper.style.transform = 'none'; updateMarkerRotations(); map.setView(userPos, hole.zoom || 17); }
         }
 
-        function jumpToHole(num) { currentHole = num; applyHoleState(); }
-
         function updateUI() {
             const hole = holeData[currentHole-1]; if (!hole) return;
             document.getElementById('hole-num').innerText = hole.num;
             document.getElementById('par-val').innerText = hole.par;
             const hs = document.getElementById('hole-symbol'), hb = document.getElementById('hole-box');
-            
             if (hole.par >= 5) { hs.innerText = "-"; hb.style.backgroundColor = "#b91c1c"; }
             else if (hole.par === 3) { hs.innerText = "·"; hb.style.backgroundColor = "#1d4ed8"; }
             else { hs.innerText = ""; hb.style.backgroundColor = "#15803d"; }
-            
             const rel = hole.score === 0 ? "E" : (hole.score > 0 ? `+${hole.score}` : hole.score);
             document.getElementById('score-display').innerText = rel;
-            
-            const tag = document.getElementById('score-rel-tag');
-            tag.innerText = rel === "E" ? "Even" : rel;
-            tag.className = `px-1.5 py-0.5 rounded text-[10px] font-black uppercase ${hole.score > 0 ? 'bg-red-50 text-red-600' : (hole.score < 0 ? 'bg-blue-50 text-blue-600' : 'bg-green-50 text-green-700')}`;
-            
-            updateCurrentDist(); 
-            updateNavigationGrid();
+            document.getElementById('score-rel-tag').innerText = rel === "E" ? "Even" : rel;
+            document.getElementById('score-rel-tag').className = `px-1.5 py-0.5 rounded text-[10px] font-black uppercase ${hole.score > 0 ? 'bg-red-50 text-red-600' : (hole.score < 0 ? 'bg-blue-50 text-blue-600' : 'bg-green-50 text-green-700')}`;
+            updateCurrentDist(); updateNavigationGrid();
         }
 
         function updateNavigationGrid() {
-            const container = document.getElementById('nav-grid-container');
-            container.innerHTML = ''; let ts = 0, tr = 0;
-
+            const container = document.getElementById('nav-grid-container'); container.innerHTML = '';
+            let ts = 0, tr = 0;
             holeData.forEach((h, idx) => {
                 const rel = h.score === 0 ? "-" : (h.score > 0 ? `+${h.score}` : h.score);
                 const relColor = h.score > 0 ? "text-red-400" : (h.score < 0 ? "text-blue-400" : "text-white/20");
-                const isActive = (idx + 1 === currentHole) ? "nav-active-hole" : "";
-                
-                // --- Updated Rule: Par Symbols in Nav Grid ---
-                const navSym = h.par >= 5 ? "-" : (h.par === 3 ? "·" : "");
-
-                container.innerHTML += `
-                    <div onclick="jumpToHole(${h.num})" class="nav-score-item flex-1 ${isActive}">
-                        <span class="text-[7px] text-white/40 leading-none h-1 flex items-center">${navSym}</span>
-                        <span class="text-[7px] text-white/40 leading-none mt-1">${h.num}</span>
-                        <span class="text-[10px] font-black ${relColor} leading-none mt-0.5">${rel}</span>
-                    </div>
-                `;
+                const sy = h.par >= 5 ? "-" : (h.par === 3 ? "·" : "");
+                container.innerHTML += `<div onclick="currentHole=${h.num};applyHoleState();" class="nav-score-item flex-1 ${idx+1===currentHole?'nav-active-hole':''}"><span class="text-[7px] text-white/40 h-1 flex items-center">${sy}</span><span class="text-[7px] text-white/40 mt-1">${h.num}</span><span class="text-[10px] font-black ${relColor} mt-0.5">${rel}</span></div>`;
                 ts += (h.par + h.score); tr += h.score;
             });
-
             document.getElementById('mini-total-strokes').innerText = `STROKES ${ts}`;
             const relTxt = tr === 0 ? "EVEN" : (tr > 0 ? `+${tr}` : tr);
             const relEl = document.getElementById('mini-total-rel'); relEl.innerText = relTxt;
@@ -378,14 +334,7 @@
             const c=document.getElementById('game-items-container'); c.innerHTML=''; 
             games.forEach(g=>{ 
                 let r=g.holeData.reduce((a,h)=>a+h.score,0); 
-                c.innerHTML+=`
-                    <div onclick="loadGame(${g.id})" class="p-4 rounded-2xl border-2 ${g.id===currentGameId?'border-green-600 bg-green-50':'border-gray-100 bg-white'} flex justify-between items-center shadow-sm active:scale-95 mb-2 transition-all">
-                        <div class="flex flex-col">
-                            <span class="text-[10px] font-bold text-gray-400 tracking-widest">${g.date}</span>
-                            <span class="text-lg font-black text-gray-800 tracking-tighter">라운딩 #${g.id.toString().slice(-4)}</span>
-                        </div>
-                        <span class="text-xl font-black ${r>0?'text-red-500':(r<0?'text-blue-500':'text-gray-400')}">${r===0?'E':(r>0?'+'+r:r)}</span>
-                    </div>`; 
+                c.innerHTML+=`<div onclick="loadGame(${g.id})" class="p-4 rounded-2xl border-2 ${g.id===currentGameId?'border-green-600 bg-green-50':'border-gray-100 bg-white'} flex justify-between items-center active:scale-95 mb-2 transition-all shadow-sm"><div class="flex flex-col"><span class="text-[10px] font-bold text-gray-400 tracking-widest">${g.date}</span><span class="text-lg font-black text-gray-800 tracking-tighter">Rounding #${g.id.toString().slice(-4)}</span></div><span class="text-xl font-black ${r>0?'text-red-500':(r<0?'text-blue-500':'text-gray-400')}">${r===0?'E':(r>0?'+'+r:r)}</span></div>`; 
             }); 
             lucide.createIcons(); 
         }
