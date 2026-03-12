@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Smart Golf Caddy Pro v48</title>
+    <title>Smart Golf Caddy Pro v49</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
     <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
@@ -41,9 +41,9 @@
         .toast { background: rgba(0, 0, 0, 0.9); color: white; padding: 12px 24px; border-radius: 16px; font-size: 14px; font-weight: bold; opacity: 0; transition: all 0.4s; transform: translateY(20px); text-align: center; border: 1px solid rgba(255,255,255,0.1); white-space: nowrap; }
         .toast.show { opacity: 1; transform: translateY(0); }
 
-        /* Centered Hole Box - Clickable */
-        #hole-box { position: relative; width: 64px; height: 64px; border-radius: 20px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; overflow: hidden; cursor: pointer; }
-        #hole-box:active { transform: scale(0.95); opacity: 0.8; }
+        /* Centered Hole Box - Clickable & Unified Background */
+        #hole-box { position: relative; width: 64px; height: 64px; border-radius: 20px; display: flex; align-items: center; justify-content: center; transition: background-color 0.3s, transform 0.2s; overflow: hidden; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); }
+        #hole-box:active { transform: scale(0.95); opacity: 0.9; }
         #hole-symbol { position: absolute; top: 6px; left: 0; right: 0; text-align: center; font-size: 22px; line-height: 1; font-weight: 900; pointer-events: none; height: 16px; display: flex; align-items: center; justify-content: center; }
         #hole-num { font-size: 32px; font-weight: 900; line-height: 1; margin-top: 4px; pointer-events: none; }
         
@@ -60,8 +60,8 @@
     <div id="status-bar" class="fixed left-0 right-0 z-[1000] px-4 flex flex-col items-center pointer-events-none layout-animated status-bottom">
         <div class="flex justify-center items-center w-full max-w-lg">
             <div class="glass p-3 rounded-[32px] shadow-2xl flex items-center gap-4 border-b-4 border-green-600 pointer-events-auto w-full">
-                <!-- Hole Info Box: Click to jump to next hole -->
-                <div id="hole-box" onclick="nextHole()" class="bg-green-700 text-white shrink-0 shadow-lg" title="다음 홀로 이동">
+                <!-- Hole Info Box: Unified Background Color -->
+                <div id="hole-box" onclick="nextHole()" class="bg-green-700 text-white shrink-0 shadow-lg">
                     <span id="hole-symbol"></span>
                     <span class="text-2xl font-black" id="hole-num">1</span>
                 </div>
@@ -89,7 +89,7 @@
 
     <div id="map"></div>
 
-    <!-- Map Controls -->
+    <!-- UI Controls -->
     <div id="right-controls" class="fixed right-4 top-1/2 -translate-y-1/2 z-[1000] flex flex-col gap-4">
         <button onclick="toggleGameList()" class="glass w-14 h-14 rounded-full flex items-center justify-center text-gray-700 shadow-2xl active:scale-90 border-2 border-white/50"><i data-lucide="home"></i></button>
         <button id="rotate-btn" onclick="maximizeHoleView()" class="glass w-14 h-14 rounded-full flex items-center justify-center text-gray-500 shadow-2xl active:scale-90 border-2 border-white/50"><i data-lucide="compass"></i></button>
@@ -98,7 +98,7 @@
         <button onclick="resetHole()" class="glass w-14 h-14 rounded-full flex items-center justify-center text-red-500 shadow-2xl active:scale-90 border-2 border-white/50"><i data-lucide="trash-2"></i></button>
     </div>
 
-    <!-- Navigation Bar / Floating Scoreboard - Default at Top -->
+    <!-- Navigation / Scoreboard Bar - Default at Top -->
     <div id="nav-bar" class="fixed left-0 right-0 z-[1000] px-2 pointer-events-none flex justify-center layout-animated nav-top">
         <div class="glass-dark px-3 py-3 rounded-[32px] flex flex-col gap-1.5 w-full max-w-5xl pointer-events-auto shadow-2xl border border-white/10">
             <div class="flex justify-between items-center px-2 mb-0.5">
@@ -126,6 +126,7 @@
 
     <div id="toast-container" style="top: 160px;"><div id="toast" class="toast"></div></div>
 
+    <!-- History Overlay -->
     <div id="gamelist-overlay" class="view-overlay">
         <div class="glass w-full max-w-[460px] rounded-[40px] overflow-hidden shadow-2xl flex flex-col p-8 max-h-[85vh]">
             <div class="flex justify-between items-center mb-6">
@@ -133,14 +134,14 @@
                 <button onclick="createNewGame()" class="bg-green-700 text-white px-5 py-2.5 rounded-2xl text-sm font-bold shadow-lg active:scale-95">새 게임</button>
             </div>
             <div id="game-items-container" class="flex-1 overflow-y-auto space-y-4 pr-1"></div>
-            <button onclick="toggleGameList(false)" class="mt-6 w-full py-4 bg-gray-100 text-gray-500 rounded-[24px] font-bold">닫기</button>
+            <button onclick="toggleGameList(false)" class="mt-6 w-full py-4 bg-gray-100 text-gray-500 rounded-[24px] font-bold active:bg-gray-200">닫기</button>
         </div>
     </div>
 
     <script>
         // --- Core Configuration ---
-        const GAMES_STORAGE_KEY = 'GOLF_CADDY_DATA_V48';
-        const LAYOUT_STORAGE_KEY = 'GOLF_CADDY_LAYOUT_V48';
+        const GAMES_STORAGE_KEY = 'GOLF_CADDY_DATA_V49';
+        const LAYOUT_STORAGE_KEY = 'GOLF_CADDY_LAYOUT_V49';
         const DEFAULT_ZOOM = 16;
         const MAX_ZOOM = 18;
 
@@ -187,7 +188,7 @@
             showToast(`${currentHole}번 홀로 이동합니다.`);
         };
 
-        // --- Data Flow ---
+        // --- Data Persistence ---
         function saveToLocal() {
             const idx = games.findIndex(g => g.id === currentGameId);
             if (idx !== -1) games[idx].holeData = holeData;
@@ -358,24 +359,34 @@
         }
 
         window.jumpToHole = (num) => { currentHole = num; applyHoleState(); };
+        
         window.cyclePar = () => { 
             const idx = currentHole - 1, h = holeData[idx]; h.par = h.par === 5 ? 3 : h.par + 1; 
             const start = currentHole <= 9 ? 0 : 9; let sum = 0; for(let i=start; i<start+9; i++) sum += (holeData[i]?.par || 0);
             if (sum !== 36) showToast(`${currentHole <= 9 ? '전반' : '후반'} 9홀 합계: ${sum} (목표: 36)`);
             updateUI(); saveToLocal(); 
         };
+
         window.updateScore = (v) => { 
             const h = holeData[currentHole-1]; h.score += v; h.isEntered = true;
             updateUI(); saveToLocal(); 
         };
 
+        // --- Improved UI Update (Unified Backgrounds) ---
         function updateUI() {
             const h = holeData[currentHole-1]; if (!h) return;
-            document.getElementById('hole-num').innerText = h.num; document.getElementById('par-val').innerText = h.par;
+            document.getElementById('hole-num').innerText = h.num; 
+            document.getElementById('par-val').innerText = h.par;
             const hs = document.getElementById('hole-symbol'), hb = document.getElementById('hole-box');
-            if (h.par >= 5) { hs.innerText = "—"; hb.style.backgroundColor = "#b91c1c"; }
-            else if (h.par === 3) { hs.innerText = "·"; hb.style.backgroundColor = "#1d4ed8"; }
-            else { hs.innerText = ""; hs.style.backgroundColor = "#15803d"; hb.style.backgroundColor = "#15803d"; }
+            
+            // --- v49: Unified Background logic ---
+            let themeColor = "#15803d"; // Default Green
+            if (h.par >= 5) { hs.innerText = "—"; themeColor = "#b91c1c"; } // Red
+            else if (h.par === 3) { hs.innerText = "·"; themeColor = "#1d4ed8"; } // Blue
+            else { hs.innerText = ""; themeColor = "#15803d"; } // Green
+            
+            hb.style.backgroundColor = themeColor;
+            
             const rel = h.score === 0 ? "E" : (h.score > 0 ? `+${h.score}` : h.score);
             document.getElementById('score-display').innerText = rel;
             const tag = document.getElementById('score-rel-tag'); tag.innerText = rel === "E" ? "Even" : rel;
@@ -383,11 +394,11 @@
             updateCurrentDist(); updateNavigationGrid();
         }
 
-        // --- New Summary Logic ---
         function getSummaryHTML(strokes, rel, enteredCount) {
             if (enteredCount === 0) return "-";
             const relStr = rel === 0 ? "E" : (rel > 0 ? `+${rel}` : rel);
             const relColor = rel > 0 ? 'text-red-400' : (rel < 0 ? 'text-blue-400' : 'text-white');
+            // Formatted as "Strokes(Rel)"
             return `<span class="text-white">${strokes}</span><span class="${relColor} ml-0.5">(${relStr})</span>`;
         }
 
